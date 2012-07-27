@@ -24,6 +24,8 @@ import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.preference.PreferenceManager;
 import android.provider.Telephony;
+import android.telephony.PhoneStateListener;
+import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaSmsCbProgramData;
 import android.util.Log;
@@ -34,6 +36,9 @@ import com.android.internal.telephony.cdma.sms.SmsEnvelope;
 public class CellBroadcastReceiver extends BroadcastReceiver {
     private static final String TAG = "CellBroadcastReceiver";
     static final boolean DBG = true;    // STOPSHIP: change to false before ship
+    private ServiceStateListener mSsl = new ServiceStateListener();
+    private Context mC;
+    private int mSs = -1;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -46,9 +51,14 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
         String action = intent.getAction();
 
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
-            startConfigService(context);
+            mC = context;
+            if (DBG) log("Registering for ServiceState updates");
+            TelephonyManager tm = (TelephonyManager)context.getSystemService(
+                    Context.TELEPHONY_SERVICE);
+            tm.listen(mSsl, PhoneStateListener.LISTEN_SERVICE_STATE);
         } else if (Intent.ACTION_AIRPLANE_MODE_CHANGED.equals(action)) {
             boolean airplaneModeOn = intent.getBooleanExtra("state", false);
+            if (DBG) log("airplaneModeOn: " + airplaneModeOn);
             if (!airplaneModeOn) {
                 startConfigService(context);
             }
@@ -155,19 +165,19 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
      * @param context the broadcast receiver context
      */
     static void startConfigService(Context context) {
+        String action = CellBroadcastConfigService.ACTION_ENABLE_CHANNELS_GSM;
         if (phoneIsCdma()) {
-            if (DBG) log("CDMA phone detected; doing nothing");
-        } else {
-            Intent serviceIntent = new Intent(CellBroadcastConfigService.ACTION_ENABLE_CHANNELS,
-                    null, context, CellBroadcastConfigService.class);
-            context.startService(serviceIntent);
+            action = CellBroadcastConfigService.ACTION_ENABLE_CHANNELS_CDMA;
         }
+        Intent serviceIntent = new Intent(action, null,
+                context, CellBroadcastConfigService.class);
+        context.startService(serviceIntent);
     }
 
     /**
      * @return true if the phone is a CDMA phone type
      */
-    private static boolean phoneIsCdma() {
+    static boolean phoneIsCdma() {
         boolean isCdma = false;
         try {
             ITelephony phone = ITelephony.Stub.asInterface(ServiceManager.checkService("phone"));
@@ -178,6 +188,20 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
             Log.w(TAG, "phone.getActivePhoneType() failed", e);
         }
         return isCdma;
+    }
+
+    private class ServiceStateListener extends PhoneStateListener {
+        @Override
+        public void onServiceStateChanged(ServiceState ss) {
+            if (ss.getState() != mSs) {
+                Log.d(TAG, "Service state changed! " + ss.getState() + " Full: " + ss);
+                if (ss.getState() == ServiceState.STATE_IN_SERVICE ||
+                    ss.getState() == ServiceState.STATE_EMERGENCY_ONLY    ) {
+                    mSs = ss.getState();
+                    startConfigService(mC);
+                }
+            }
+        }
     }
 
     private static void log(String msg) {
