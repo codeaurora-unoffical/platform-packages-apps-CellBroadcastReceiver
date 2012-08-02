@@ -193,6 +193,8 @@ public class CellBroadcastAlertService extends Service {
                             CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS, false);
 
                 case SmsCbConstants.MESSAGE_ID_CMAS_ALERT_REQUIRED_MONTHLY_TEST:
+                case SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXERCISE:
+                case SmsCbConstants.MESSAGE_ID_CMAS_ALERT_OPERATOR_DEFINED_USE:
                     return PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
                             CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS, false);
 
