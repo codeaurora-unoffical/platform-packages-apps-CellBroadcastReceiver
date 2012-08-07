@@ -172,17 +172,57 @@ public class CellBroadcastConfigService extends IntentService {
             boolean enableChannel50Alerts = res.getBoolean(R.bool.show_brazil_settings) &&
                     prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_50_ALERTS, true);
 
+            boolean enableEtwsTestAlerts = prefs.getBoolean(
+                    CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS, false);
+
+            boolean enableCmasExtremeAlerts = prefs.getBoolean(
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS, true);
+
+            boolean enableCmasSevereAlerts = prefs.getBoolean(
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS, true);
+
+            boolean enableCmasAmberAlerts = prefs.getBoolean(
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS, true);
+
+            boolean enableCmasTestAlerts = prefs.getBoolean(
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS, false);
+
             SmsManager manager = SmsManager.getDefault();
             if (enableEmergencyAlerts) {
                 if (DBG) log("enabling emergency cell broadcast channels");
                 if (!TextUtils.isEmpty(emergencyIdRange)) {
                     setChannelRange(manager, emergencyIdRange, true, false);
                 } else {
-                    // No emergency channel system property, enable all emergency channels
+                    // No emergency channel system property, enable all
+                    // emergency channels
                     manager.enableCellBroadcastRange(
-                            SmsCbConstants.MESSAGE_ID_PWS_FIRST_IDENTIFIER,
-                            SmsCbConstants.MESSAGE_ID_PWS_LAST_IDENTIFIER);
-
+                            SmsCbConstants.MESSAGE_ID_ETWS_EARTHQUAKE_WARNING,
+                            SmsCbConstants.MESSAGE_ID_ETWS_EARTHQUAKE_AND_TSUNAMI_WARNING);
+                    if (enableEtwsTestAlerts) {
+                        manager.enableCellBroadcast(
+                                SmsCbConstants.MESSAGE_ID_ETWS_TEST_MESSAGE);
+                    }
+                    manager.enableCellBroadcast(
+                            SmsCbConstants.MESSAGE_ID_ETWS_OTHER_EMERGENCY_TYPE);
+                    if (enableCmasExtremeAlerts) {
+                        manager.enableCellBroadcastRange(
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_OBSERVED,
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_LIKELY);
+                    }
+                    if (enableCmasSevereAlerts) {
+                        manager.enableCellBroadcastRange(
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_IMMEDIATE_OBSERVED,
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_EXPECTED_LIKELY);
+                    }
+                    if (enableCmasAmberAlerts) {
+                        manager.enableCellBroadcast(
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_CHILD_ABDUCTION_EMERGENCY);
+                    }
+                    if (enableCmasTestAlerts) {
+                        manager.enableCellBroadcastRange(
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_REQUIRED_MONTHLY_TEST,
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_OPERATOR_DEFINED_USE);
+                    }
                     // CMAS Presidential must be on (See 3GPP TS 22.268 Section 6.2).
                     manager.enableCellBroadcast(
                             SmsCbConstants.MESSAGE_ID_CMAS_ALERT_PRESIDENTIAL_LEVEL);
@@ -197,12 +237,25 @@ public class CellBroadcastConfigService extends IntentService {
                     // No emergency channel system property, disable all emergency channels
                     // except for CMAS Presidential (See 3GPP TS 22.268 Section 6.2)
                     manager.disableCellBroadcastRange(
-                            SmsCbConstants.MESSAGE_ID_PWS_FIRST_IDENTIFIER,
-                            SmsCbConstants.MESSAGE_ID_PWS_LAST_IDENTIFIER);
-
+                            SmsCbConstants.MESSAGE_ID_ETWS_EARTHQUAKE_WARNING,
+                            SmsCbConstants.MESSAGE_ID_ETWS_EARTHQUAKE_AND_TSUNAMI_WARNING);
+                    manager.disableCellBroadcast(
+                            SmsCbConstants.MESSAGE_ID_ETWS_TEST_MESSAGE);
+                    manager.disableCellBroadcast(
+                            SmsCbConstants.MESSAGE_ID_ETWS_OTHER_EMERGENCY_TYPE);
+                    manager.disableCellBroadcastRange(
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_OBSERVED,
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_LIKELY);
+                    manager.disableCellBroadcastRange(
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_IMMEDIATE_OBSERVED,
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_EXPECTED_LIKELY);
+                    manager.disableCellBroadcast(
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_CHILD_ABDUCTION_EMERGENCY);
+                    manager.disableCellBroadcastRange(
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_REQUIRED_MONTHLY_TEST,
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_OPERATOR_DEFINED_USE);
                     manager.enableCellBroadcast(
                             SmsCbConstants.MESSAGE_ID_CMAS_ALERT_PRESIDENTIAL_LEVEL);
-
                 }
                 if (DBG) log("disabled emergency cell broadcast channels");
             }
@@ -215,6 +268,35 @@ public class CellBroadcastConfigService extends IntentService {
                 if (DBG) log("disabling cell broadcast channel 50");
                 manager.disableCellBroadcast(50);
                 if (DBG) log("disabled cell broadcast channel 50");
+            }
+
+            if (!enableEtwsTestAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast ETWS test messages");
+                manager.disableCellBroadcast(
+                        SmsCbConstants.MESSAGE_ID_ETWS_TEST_MESSAGE);
+            }
+            if (!enableCmasExtremeAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS extreme");
+                manager.disableCellBroadcastRange(
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_OBSERVED,
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_LIKELY);
+            }
+            if (!enableCmasSevereAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS severe");
+                manager.disableCellBroadcastRange(
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_IMMEDIATE_OBSERVED,
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_EXPECTED_LIKELY);
+            }
+            if (!enableCmasAmberAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS amber");
+                manager.disableCellBroadcast(
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_CHILD_ABDUCTION_EMERGENCY);
+            }
+            if (!enableCmasTestAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS test messages");
+                manager.disableCellBroadcastRange(
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_REQUIRED_MONTHLY_TEST,
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_OPERATOR_DEFINED_USE);
             }
         } catch (Exception ex) {
             Log.e(TAG, "exception enabling cell broadcast channels", ex);
@@ -232,6 +314,18 @@ public class CellBroadcastConfigService extends IntentService {
             boolean enableEmergencyAlerts = prefs.getBoolean(
                     CellBroadcastSettings.KEY_ENABLE_EMERGENCY_ALERTS, true);
 
+            boolean enableCmasExtremeAlerts = prefs.getBoolean(
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS, true);
+
+            boolean enableCmasSevereAlerts = prefs.getBoolean(
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS, true);
+
+            boolean enableCmasAmberAlerts = prefs.getBoolean(
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS, true);
+
+            boolean enableCmasTestAlerts = prefs.getBoolean(
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS, false);
+
             SmsManager manager = SmsManager.getDefault();
             if (enableEmergencyAlerts) {
                 if (DBG) log("enabling emergency cdma broadcast channels");
@@ -239,9 +333,22 @@ public class CellBroadcastConfigService extends IntentService {
                     setChannelRange(manager, emergencyIdRange, true, true);
                 } else {
                     // No emergency channel system property, enable all emergency channels
-                    manager.enableCdmaBroadcastRange(
-                            SmsEnvelope.SERVICE_CATEGORY_CMAS_PRESIDENTIAL_LEVEL_ALERT,
-                            SmsEnvelope.SERVICE_CATEGORY_CMAS_TEST_MESSAGE);
+                    // that have checkbox checked
+                    if (enableCmasExtremeAlerts) {
+                        manager.enableCdmaBroadcast(
+                                SmsEnvelope.SERVICE_CATEGORY_CMAS_EXTREME_THREAT);
+                    }
+                    if (enableCmasSevereAlerts) {
+                        manager.enableCdmaBroadcast(
+                                SmsEnvelope.SERVICE_CATEGORY_CMAS_SEVERE_THREAT);
+                    }
+                    if (enableCmasAmberAlerts) {
+                        manager.enableCdmaBroadcast(
+                                SmsEnvelope.SERVICE_CATEGORY_CMAS_CHILD_ABDUCTION_EMERGENCY);
+                    }
+                    if (enableCmasTestAlerts) {
+                        manager.enableCdmaBroadcast(SmsEnvelope.SERVICE_CATEGORY_CMAS_TEST_MESSAGE);
+                    }
 
                     // CMAS Presidential must be on.
                     manager.enableCdmaBroadcast(
@@ -256,9 +363,13 @@ public class CellBroadcastConfigService extends IntentService {
                     setChannelRange(manager, emergencyIdRange, false, true);
                 } else {
                     // No emergency channel system property, disable all emergency channels
-                    manager.disableCdmaBroadcastRange(
-                            SmsEnvelope.SERVICE_CATEGORY_CMAS_PRESIDENTIAL_LEVEL_ALERT,
-                            SmsEnvelope.SERVICE_CATEGORY_CMAS_TEST_MESSAGE);
+                    manager.disableCdmaBroadcast(
+                            SmsEnvelope.SERVICE_CATEGORY_CMAS_EXTREME_THREAT);
+                    manager.disableCdmaBroadcast(
+                            SmsEnvelope.SERVICE_CATEGORY_CMAS_SEVERE_THREAT);
+                    manager.disableCdmaBroadcast(
+                            SmsEnvelope.SERVICE_CATEGORY_CMAS_CHILD_ABDUCTION_EMERGENCY);
+                    manager.disableCdmaBroadcast(SmsEnvelope.SERVICE_CATEGORY_CMAS_TEST_MESSAGE);
 
                     // CMAS Presidential must be on.
                     manager.enableCdmaBroadcast(
@@ -266,6 +377,26 @@ public class CellBroadcastConfigService extends IntentService {
                 }
                 if (DBG) log("disabled emergency cdma broadcast channels");
             }
+
+            if (!enableCmasExtremeAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS extreme");
+                manager.disableCdmaBroadcast(SmsEnvelope.SERVICE_CATEGORY_CMAS_EXTREME_THREAT);
+            }
+            if (enableCmasSevereAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS severe");
+                manager.disableCdmaBroadcast(
+                        SmsEnvelope.SERVICE_CATEGORY_CMAS_SEVERE_THREAT);
+            }
+            if (!enableCmasAmberAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS amber");
+                manager.disableCdmaBroadcast(
+                        SmsEnvelope.SERVICE_CATEGORY_CMAS_CHILD_ABDUCTION_EMERGENCY);
+            }
+            if (!enableCmasTestAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS test");
+                manager.disableCdmaBroadcast(SmsEnvelope.SERVICE_CATEGORY_CMAS_TEST_MESSAGE);
+            }
+
         } catch (Exception ex) {
             Log.e(TAG, "exception enabling cdma broadcast channels", ex);
         }
