@@ -106,5 +106,22 @@ public class CellBroadcastSettings extends PreferenceActivity {
         if (enableChannel50Alerts != null) {
             enableChannel50Alerts.setOnPreferenceChangeListener(startConfigServiceListener);
         }
+        Preference enableEtwsAlerts = findPreference(KEY_ENABLE_ETWS_TEST_ALERTS);
+        if (enableEtwsAlerts != null) {
+            enableEtwsAlerts.setOnPreferenceChangeListener(startConfigServiceListener);
+        }
+        Preference enableCmasImminentAlerts =
+                findPreference(KEY_ENABLE_CMAS_IMMINENT_THREAT_ALERTS);
+        if (enableCmasImminentAlerts != null) {
+            enableCmasImminentAlerts.setOnPreferenceChangeListener(startConfigServiceListener);
+        }
+        Preference enableCmasAmberAlerts = findPreference(KEY_ENABLE_CMAS_AMBER_ALERTS);
+        if (enableCmasAmberAlerts != null) {
+            enableCmasAmberAlerts.setOnPreferenceChangeListener(startConfigServiceListener);
+        }
+        Preference enableCmasTestAlerts = findPreference(KEY_ENABLE_CMAS_TEST_ALERTS);
+        if (enableCmasTestAlerts != null) {
+            enableCmasTestAlerts.setOnPreferenceChangeListener(startConfigServiceListener);
+        }
     }
 }
