@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
- * Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,11 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.os.Bundle;
 import android.os.SystemProperties;
 import android.preference.PreferenceManager;
+import android.telephony.MSimSmsManager;
+import android.telephony.MSimTelephonyManager;
 import android.telephony.SmsManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -30,7 +33,9 @@ import android.util.Log;
 import com.android.internal.telephony.gsm.SmsCbConstants;
 import com.android.internal.telephony.cdma.sms.SmsEnvelope;
 
+import static com.android.cellbroadcastreceiver.CellBroadcastSettings.cellbroadcast50;
 import static com.android.cellbroadcastreceiver.CellBroadcastReceiver.DBG;
+import static com.android.internal.telephony.MSimConstants.SUBSCRIPTION_KEY;
 
 /**
  * This service manages enabling and disabling ranges of message identifiers
@@ -56,6 +61,8 @@ public class CellBroadcastConfigService extends IntentService {
     // Note: key name cannot exceeds 32 chars.
     static final String EMERGENCY_BROADCAST_RANGE_CDMA =
             "ro.cb.cdma.emergencyids";
+    private int mSubscription;
+
 
     public CellBroadcastConfigService() {
         super(TAG);          // use class name for worker thread name
@@ -151,6 +158,10 @@ public class CellBroadcastConfigService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+        if (MSimTelephonyManager.getDefault().isMultiSimEnabled() && cellbroadcast50) {
+            Bundle extras = intent.getExtras();
+            mSubscription  = extras.getInt(SUBSCRIPTION_KEY);
+        }
         if (ACTION_ENABLE_CHANNELS_GSM.equals(intent.getAction())) {
             configGsmChannels();
         } else if (ACTION_ENABLE_CHANNELS_CDMA.equals(intent.getAction())) {
@@ -169,8 +180,22 @@ public class CellBroadcastConfigService extends IntentService {
             boolean enableEmergencyAlerts = prefs.getBoolean(
                     CellBroadcastSettings.KEY_ENABLE_EMERGENCY_ALERTS, true);
 
-            boolean enableChannel50Alerts = res.getBoolean(R.bool.show_brazil_settings) &&
+            boolean enableChannel50Alerts;
+            if (!MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                enableChannel50Alerts = res.getBoolean(R.bool.show_brazil_settings) &&
                     prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_50_ALERTS, true);
+            } else {
+               // cellbroadcast50 = false;
+                if (mSubscription == 0) {
+                    enableChannel50Alerts = res.getBoolean(R.bool.show_brazil_settings) &&
+                            prefs.getBoolean(
+                            CellBroadcastChannel50Alerts.KEY_ENABLE_CHANNEL_50_ALERTS_SUB1, true);
+                } else {
+                    enableChannel50Alerts = res.getBoolean(R.bool.show_brazil_settings) &&
+                            prefs.getBoolean(
+                            CellBroadcastChannel50Alerts.KEY_ENABLE_CHANNEL_50_ALERTS_SUB2, true);
+                }
+            }
 
             boolean enableEtwsTestAlerts = prefs.getBoolean(
                     CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS, false);
@@ -262,11 +287,21 @@ public class CellBroadcastConfigService extends IntentService {
 
             if (enableChannel50Alerts) {
                 if (DBG) log("enabling cell broadcast channel 50");
-                manager.enableCellBroadcast(50);
+                if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                    MSimSmsManager smsManagerMSim = MSimSmsManager.getDefault();
+                    smsManagerMSim.enableCellBroadcast(50, mSubscription);
+                } else {
+                    manager.enableCellBroadcast(50);
+                }
                 if (DBG) log("enabled cell broadcast channel 50");
             } else {
                 if (DBG) log("disabling cell broadcast channel 50");
-                manager.disableCellBroadcast(50);
+                if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                    MSimSmsManager smsManagerMSim = MSimSmsManager.getDefault();
+                    smsManagerMSim.disableCellBroadcast(50, mSubscription);
+                } else {
+                    manager.disableCellBroadcast(50);
+                }
                 if (DBG) log("disabled cell broadcast channel 50");
             }
 
