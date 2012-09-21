@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +36,8 @@ import android.util.Log;
 
 import com.android.internal.telephony.ITelephony;
 import com.android.internal.telephony.cdma.sms.SmsEnvelope;
+
+import static com.android.internal.telephony.MSimConstants.SUBSCRIPTION_KEY;
 
 import java.util.ArrayList;
 
@@ -216,6 +219,17 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
         }
         Intent serviceIntent = new Intent(action, null,
                 context, CellBroadcastConfigService.class);
+        context.startService(serviceIntent);
+    }
+
+    static void startConfigService(Context context,int subscription) {
+        String action = CellBroadcastConfigService.ACTION_ENABLE_CHANNELS_GSM;
+        if (phoneIsCdma()) {
+            action = CellBroadcastConfigService.ACTION_ENABLE_CHANNELS_CDMA;
+        }
+        Intent serviceIntent = new Intent(action, null,
+                context, CellBroadcastConfigService.class);
+        serviceIntent.putExtra(SUBSCRIPTION_KEY, subscription);
         context.startService(serviceIntent);
     }
 
