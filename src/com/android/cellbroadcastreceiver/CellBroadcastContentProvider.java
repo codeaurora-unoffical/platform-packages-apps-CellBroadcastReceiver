@@ -64,7 +64,7 @@ public class CellBroadcastContentProvider extends ContentProvider {
     private static final String CB_DUP_DETECTION = "persist.cb.dup_detection";
 
     /** Check for system property to enable/disable duplicate detection.  */
-    private boolean mUseDupDetection = SystemProperties.getBoolean(CB_DUP_DETECTION, true);
+    static boolean mUseDupDetection = SystemProperties.getBoolean(CB_DUP_DETECTION, true);
 
     static {
         sUriMatcher.addURI(CB_AUTHORITY, null, CB_ALL);

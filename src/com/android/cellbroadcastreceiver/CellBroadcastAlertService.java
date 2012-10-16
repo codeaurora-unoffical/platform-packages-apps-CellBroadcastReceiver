@@ -136,12 +136,14 @@ public class CellBroadcastAlertService extends Service {
             return;
         }
 
-        // Set.add() returns false if message ID has already been added
-        MessageIdAndScope messageIdAndScope = new MessageIdAndScope(message.getSerialNumber(),
-                message.getLocation());
-        if (!sCmasIdList.add(messageIdAndScope)) {
-            Log.d(TAG, "ignoring duplicate alert with " + messageIdAndScope);
-            return;
+        if (CellBroadcastContentProvider.mUseDupDetection) {
+            // Set.add() returns false if message ID has already been added
+            MessageIdAndScope messageIdAndScope = new MessageIdAndScope(message.getSerialNumber(),
+                    message.getLocation());
+            if (!sCmasIdList.add(messageIdAndScope)) {
+                Log.d(TAG, "ignoring duplicate alert with " + messageIdAndScope);
+                return;
+            }
         }
 
         final Intent alertIntent = new Intent(SHOW_NEW_ALERT_ACTION);
