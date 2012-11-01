@@ -33,7 +33,6 @@ import android.util.Log;
 import com.android.internal.telephony.gsm.SmsCbConstants;
 import com.android.internal.telephony.cdma.sms.SmsEnvelope;
 
-import static com.android.cellbroadcastreceiver.CellBroadcastSettings.cellbroadcast50;
 import static com.android.cellbroadcastreceiver.CellBroadcastReceiver.DBG;
 import static com.android.internal.telephony.MSimConstants.SUBSCRIPTION_KEY;
 
@@ -158,9 +157,9 @@ public class CellBroadcastConfigService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        if (MSimTelephonyManager.getDefault().isMultiSimEnabled() && cellbroadcast50) {
-            Bundle extras = intent.getExtras();
-            mSubscription  = extras.getInt(SUBSCRIPTION_KEY);
+       if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+            mSubscription = intent.getIntExtra(SUBSCRIPTION_KEY, 0);
+            Log.i(TAG, "onHandleIntent: mSubscription = " + mSubscription);
         }
         if (ACTION_ENABLE_CHANNELS_GSM.equals(intent.getAction())) {
             configGsmChannels();
@@ -185,7 +184,6 @@ public class CellBroadcastConfigService extends IntentService {
                 enableChannel50Alerts = res.getBoolean(R.bool.show_brazil_settings) &&
                     prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_50_ALERTS, true);
             } else {
-               // cellbroadcast50 = false;
                 if (mSubscription == 0) {
                     enableChannel50Alerts = res.getBoolean(R.bool.show_brazil_settings) &&
                             prefs.getBoolean(

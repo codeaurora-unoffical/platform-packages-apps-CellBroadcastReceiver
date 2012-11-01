@@ -34,8 +34,6 @@ import android.util.Log;
 
 import com.android.internal.telephony.MSimConstants;
 
-import static com.android.cellbroadcastreceiver.CellBroadcastSettings.cellbroadcast50;
-
 /**
  * Settings activity for the cell broadcast receiver.
  */
@@ -61,7 +59,6 @@ public class CellBroadcastChannel50Alerts extends PreferenceActivity {
         Intent intent = getIntent();
         Bundle extras = intent.getExtras();
         mSubscription = extras.getInt(MSimConstants.SUBSCRIPTION_KEY);
-        cellbroadcast50 = true;
     }
 
     /**
