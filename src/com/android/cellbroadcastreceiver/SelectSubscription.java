@@ -31,8 +31,6 @@ import android.util.Log;
 
 import com.android.internal.telephony.MSimConstants;
 
-import static com.android.cellbroadcastreceiver.CellBroadcastSettings.cellbroadcast50;
-
 public class SelectSubscription extends PreferenceActivity {
     // debug data
     private static final String LOG_TAG = "SelectSubscription";
@@ -77,14 +75,10 @@ public class SelectSubscription extends PreferenceActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        cellbroadcast50 = true;
-
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        cellbroadcast50 = false;
-
     }
 }
