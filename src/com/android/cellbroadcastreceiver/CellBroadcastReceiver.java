@@ -37,10 +37,8 @@ import android.util.Log;
 import com.android.internal.telephony.ITelephony;
 import com.android.internal.telephony.cdma.sms.SmsEnvelope;
 
-import static com.android.internal.telephony.MSimConstants.SUBSCRIPTION_KEY;
-
 import java.util.ArrayList;
-
+import static com.android.internal.telephony.MSimConstants.SUBSCRIPTION_KEY;
 public class CellBroadcastReceiver extends BroadcastReceiver {
     private static final String TAG = "CellBroadcastReceiver";
     static final boolean DBG = true;    // STOPSHIP: change to false before ship
