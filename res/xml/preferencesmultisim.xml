@@ -85,8 +85,8 @@
         android:persistent="false">
 
         <intent android:action="android.intent.action.MAIN"
-            android:targetPackage="com.android.phone"
-            android:targetClass="com.android.phone.SelectSubscription" />
+            android:targetPackage="com.android.cellbroadcastreceiver"
+            android:targetClass="com.android.cellbroadcastreceiver.SelectSubscription" />
     </PreferenceScreen>
 
     </PreferenceCategory>
