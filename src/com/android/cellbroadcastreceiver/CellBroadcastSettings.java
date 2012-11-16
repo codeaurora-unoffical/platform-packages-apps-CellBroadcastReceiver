@@ -82,9 +82,6 @@ public class CellBroadcastSettings extends PreferenceActivity {
 
     public static final String BUTTON_MANAGE_SUB_KEY = "button_settings_manage_sub";
 
-    public static boolean cellbroadcast50;
-
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -178,7 +175,6 @@ public class CellBroadcastSettings extends PreferenceActivity {
             }
 
             if (!MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                cellbroadcast50 = false;
                 Preference enableChannel50Alerts = findPreference(KEY_ENABLE_CHANNEL_50_ALERTS);
                     if (enableChannel50Alerts != null) {
                         enableChannel50Alerts.
@@ -195,7 +191,6 @@ public class CellBroadcastSettings extends PreferenceActivity {
                         intent.setClassName("com.android.cellbroadcastreceiver",
                                "com.android.cellbroadcastreceiver.SelectSubscription");
                         startActivity(intent);
-                        cellbroadcast50 = true;
                         return true;
                     }
                     });
