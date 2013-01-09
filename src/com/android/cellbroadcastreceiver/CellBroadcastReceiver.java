@@ -35,6 +35,7 @@ import android.telephony.cdma.CdmaSmsCbProgramResults;
 import android.util.Log;
 
 import com.android.internal.telephony.ITelephony;
+import com.android.internal.telephony.msim.ITelephonyMSim;
 import com.android.internal.telephony.cdma.sms.SmsEnvelope;
 
 import java.util.ArrayList;
@@ -222,7 +223,7 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
 
     static void startConfigService(Context context,int subscription) {
         String action = CellBroadcastConfigService.ACTION_ENABLE_CHANNELS_GSM;
-        if (phoneIsCdma()) {
+        if (phoneIsCdma(subscription)) {
             action = CellBroadcastConfigService.ACTION_ENABLE_CHANNELS_CDMA;
         }
         Intent serviceIntent = new Intent(action, null,
@@ -243,6 +244,24 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
             }
         } catch (RemoteException e) {
             Log.w(TAG, "phone.getActivePhoneType() failed", e);
+        }
+        return isCdma;
+    }
+
+    /**
+     * @return true if the phone is a CDMA phone type in DSDS
+     */
+    static boolean phoneIsCdma(int subscription) {
+        boolean isCdma = false;
+        try {
+            ITelephonyMSim phoneMsim = ITelephonyMSim.Stub.asInterface(
+                    ServiceManager.checkService("phone_msim"));
+            if (phoneMsim != null) {
+                isCdma = (phoneMsim.getActivePhoneType(subscription) ==
+                        TelephonyManager.PHONE_TYPE_CDMA);
+            }
+        } catch (RemoteException e) {
+            Log.w(TAG, "phoneMsim.getActivePhoneType() failed", e);
         }
         return isCdma;
     }
