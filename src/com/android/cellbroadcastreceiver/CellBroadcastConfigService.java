@@ -25,11 +25,14 @@ import android.os.SystemProperties;
 import android.preference.PreferenceManager;
 import android.telephony.CellBroadcastMessage;
 import android.telephony.SmsManager;
+import android.telephony.MSimSmsManager;
+import android.telephony.MSimTelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.internal.telephony.gsm.SmsCbConstants;
 import com.android.internal.telephony.cdma.sms.SmsEnvelope;
+import com.android.internal.telephony.MSimConstants;
 
 import static com.android.cellbroadcastreceiver.CellBroadcastReceiver.DBG;
 
@@ -57,6 +60,7 @@ public class CellBroadcastConfigService extends IntentService {
     // Note: key name cannot exceeds 32 chars.
     static final String EMERGENCY_BROADCAST_RANGE_CDMA =
             "ro.cb.cdma.emergencyids";
+    private int mSubscription;
 
     public CellBroadcastConfigService() {
         super(TAG);          // use class name for worker thread name
@@ -163,6 +167,10 @@ public class CellBroadcastConfigService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+       if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+            mSubscription = intent.getIntExtra(MSimConstants.SUBSCRIPTION_KEY, 0);
+            Log.i(TAG, "onHandleIntent: mSubscription = " + mSubscription);
+        }
         if (ACTION_ENABLE_CHANNELS_GSM.equals(intent.getAction())) {
             configGsmChannels();
         } else if (ACTION_ENABLE_CHANNELS_CDMA.equals(intent.getAction())) {
@@ -181,8 +189,21 @@ public class CellBroadcastConfigService extends IntentService {
             boolean enableEmergencyAlerts = prefs.getBoolean(
                     CellBroadcastSettings.KEY_ENABLE_EMERGENCY_ALERTS, true);
 
-            boolean enableChannel50Alerts = res.getBoolean(R.bool.show_brazil_settings) &&
+            boolean enableChannel50Alerts = res.getBoolean(R.bool.show_brazil_settings);
+            if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                if (mSubscription == 0) {
+                    enableChannel50Alerts = enableChannel50Alerts &&
+                        prefs.getBoolean(
+                              CellBroadcastChannel50Alerts.KEY_ENABLE_CHANNEL_50_ALERTS_SUB1, true);
+                } else {
+                    enableChannel50Alerts = enableChannel50Alerts &&
+                        prefs.getBoolean(
+                              CellBroadcastChannel50Alerts.KEY_ENABLE_CHANNEL_50_ALERTS_SUB2, true);
+                }
+            } else {
+                enableChannel50Alerts = enableChannel50Alerts &&
                     prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_50_ALERTS, true);
+            }
 
             boolean enableEtwsTestAlerts = prefs.getBoolean(
                     CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS, false);
@@ -274,11 +295,21 @@ public class CellBroadcastConfigService extends IntentService {
 
             if (enableChannel50Alerts) {
                 if (DBG) log("enabling cell broadcast channel 50");
-                manager.enableCellBroadcast(50);
+                if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                    MSimSmsManager smsManagerMSim = MSimSmsManager.getDefault();
+                    smsManagerMSim.enableCellBroadcast(50, mSubscription);
+                } else {
+                    manager.enableCellBroadcast(50);
+                }
                 if (DBG) log("enabled cell broadcast channel 50");
             } else {
                 if (DBG) log("disabling cell broadcast channel 50");
-                manager.disableCellBroadcast(50);
+                if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                    MSimSmsManager smsManagerMSim = MSimSmsManager.getDefault();
+                    smsManagerMSim.disableCellBroadcast(50, mSubscription);
+                } else {
+                    manager.disableCellBroadcast(50);
+                }
                 if (DBG) log("disabled cell broadcast channel 50");
             }
 

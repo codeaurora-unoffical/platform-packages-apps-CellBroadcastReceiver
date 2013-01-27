@@ -26,6 +26,7 @@ import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceScreen;
 import android.provider.Settings;
+import android.telephony.MSimTelephonyManager;
 
 /**
  * Settings activity for the cell broadcast receiver.
@@ -102,7 +103,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
             super.onCreate(savedInstanceState);
 
             // Load the preferences from an XML resource
-            addPreferencesFromResource(R.xml.preferences);
+            if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                addPreferencesFromResource(R.xml.preferencesmultisim);
+            } else {
+                addPreferencesFromResource(R.xml.preferences);
+            }
 
             PreferenceScreen preferenceScreen = getPreferenceScreen();
 
@@ -171,9 +176,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
                 preferenceScreen.removePreference(findPreference(KEY_CATEGORY_DEV_SETTINGS));
             }
 
-            Preference enableChannel50Alerts = findPreference(KEY_ENABLE_CHANNEL_50_ALERTS);
-            if (enableChannel50Alerts != null) {
-                enableChannel50Alerts.setOnPreferenceChangeListener(startConfigServiceListener);
+            if (!MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                Preference enableChannel50Alerts = findPreference(KEY_ENABLE_CHANNEL_50_ALERTS);
+                if (enableChannel50Alerts != null) {
+                    enableChannel50Alerts.setOnPreferenceChangeListener(startConfigServiceListener);
+                }
             }
             Preference enableEtwsAlerts = findPreference(KEY_ENABLE_ETWS_TEST_ALERTS);
             if (enableEtwsAlerts != null) {
