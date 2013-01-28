@@ -19,23 +19,7 @@
  * limitations under the License.
  */
 -->
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <PreferenceCategory android:title="@string/category_brazil_settings_title_sub"
-                        android:key="category_brazil_settings_title">
-
-    <!-- Default value is true for Brazil. This preference is ignored and hidden
-         unless the boolean "show_brazil_settings" is set to true in config.xml. -->
-    <CheckBoxPreference android:defaultValue="true"
-                        android:key="enable_channel_50_alerts_sub1"
-                        android:summary="@string/enable_channel_50_alerts_summary"
-                        android:title="@string/enable_channel_50_alerts_title" />
-
-    <CheckBoxPreference android:defaultValue="true"
-                        android:key="enable_channel_50_alerts_sub2"
-                        android:summary="@string/enable_channel_50_alerts_summary"
-                        android:title="@string/enable_channel_50_alerts_title" />
-
-    </PreferenceCategory>
-
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/CellBroadcastChannel50"
+    android:key="parent_preference">
 </PreferenceScreen>

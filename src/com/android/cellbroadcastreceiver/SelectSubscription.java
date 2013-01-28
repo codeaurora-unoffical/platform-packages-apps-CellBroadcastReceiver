@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2009 The Android Open Source Project
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  * Not a Contribution, Apache license notifications and license are retained
  * for attribution purposes only.
  *
@@ -19,72 +19,60 @@
 
 package com.android.cellbroadcastreceiver;
 
-import com.android.cellbroadcastreceiver.R;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceScreen;
 import android.preference.PreferenceActivity;
+import android.telephony.MSimTelephonyManager;
 
 import android.util.Log;
 
 import com.android.internal.telephony.MSimConstants;
 
-import static com.android.cellbroadcastreceiver.CellBroadcastSettings.cellbroadcast50;
-
 public class SelectSubscription extends PreferenceActivity {
-    // debug data
     private static final String LOG_TAG = "SelectSubscription";
 
     // String keys for preference lookup
-    private static final String KEY_SUBSCRIPTION1 = "pref_key_subscription1";
-    private static final String KEY_SUBSCRIPTION2 = "pref_key_subscription2";
+    private static final String PREF_PARENT_KEY = "parent_pref";
+    private static final String SUBSCRIPTION_KEY = "subscription";
+
+    private int[] resourceIndex = {R.string.sub1, R.string.sub2, R.string.sub3};
 
     // Preference instance variables.
-    private Preference mSubscription1Pref;
-    private Preference mSubscription2Pref;
+    private Preference mSubscriptionPref;
 
-    // Instance variables
-    boolean mAreaInfoEnabled = false;
-    private int mSubscription = 0;
-
-    @Override
-    public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen,
-            Preference preference) {
-        Intent intent = new Intent(this, CellBroadcastChannel50Alerts.class);
-        if (preference == mSubscription1Pref) {
-            Log.d(LOG_TAG, "onPreferenceTreeClick: Selected Subsciption 1");
-            intent.putExtra(MSimConstants.SUBSCRIPTION_KEY, MSimConstants.SUB1);
-        } else {
-            Log.d(LOG_TAG, "onPreferenceTreeClick: Selected Subsciption 2");
-            intent.putExtra(MSimConstants.SUBSCRIPTION_KEY, MSimConstants.SUB2);
-        }
-        startActivity(intent);
-
-        return true;
-    }
+    Preference.OnPreferenceClickListener mPreferenceClickListener =
+            new Preference.OnPreferenceClickListener() {
+       public boolean onPreferenceClick(Preference preference) {
+           startActivity(preference.getIntent());
+           return true;
+       }
+    };
 
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
 
         Log.d (LOG_TAG, "On Create()");
         addPreferencesFromResource(R.xml.select_subscription);
-        mSubscription1Pref = findPreference(KEY_SUBSCRIPTION1);
-        mSubscription2Pref = findPreference(KEY_SUBSCRIPTION2);
-    }
+        PreferenceScreen prefParent = (PreferenceScreen) getPreferenceScreen().
+                findPreference(PREF_PARENT_KEY);
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        cellbroadcast50 = true;
+        int numPhones = MSimTelephonyManager.getDefault().getPhoneCount();
+        Intent selectIntent;
 
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        cellbroadcast50 = false;
+        for (int i = 0; i < numPhones; i++) {
+            selectIntent = new Intent();
+            mSubscriptionPref = new Preference(getApplicationContext());
+            // Set the package and target class.
+            selectIntent.setClassName("com.android.cellbroadcastreceiver",
+                    "com.android.cellbroadcastreceiver.CellBroadcastChannel50Alerts");
+            selectIntent.putExtra(SUBSCRIPTION_KEY, i);
+            mSubscriptionPref.setIntent(selectIntent);
+            mSubscriptionPref.setTitle(resourceIndex[i]);
+            mSubscriptionPref.setOnPreferenceClickListener(mPreferenceClickListener);
+            prefParent.addPreference(mSubscriptionPref);
+       }
 
     }
 }

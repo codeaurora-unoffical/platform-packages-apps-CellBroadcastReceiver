@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,7 +17,6 @@
 
 package com.android.cellbroadcastreceiver;
 
-import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.preference.ListPreference;
@@ -26,7 +25,6 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceScreen;
-import android.preference.Preference.OnPreferenceClickListener;
 import android.provider.Settings;
 import android.telephony.MSimTelephonyManager;
 
@@ -79,11 +77,6 @@ public class CellBroadcastSettings extends PreferenceActivity {
     // Preference key for whether to enable channel 50 notifications
     // Enabled by default for phones sold in Brazil, otherwise this setting may be hidden.
     public static final String KEY_ENABLE_CHANNEL_50_ALERTS = "enable_channel_50_alerts";
-
-    public static final String BUTTON_MANAGE_SUB_KEY = "button_settings_manage_sub";
-
-    public static boolean cellbroadcast50;
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -178,29 +171,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
             }
 
             if (!MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                cellbroadcast50 = false;
                 Preference enableChannel50Alerts = findPreference(KEY_ENABLE_CHANNEL_50_ALERTS);
                     if (enableChannel50Alerts != null) {
                         enableChannel50Alerts.
                                 setOnPreferenceChangeListener(startConfigServiceListener);
                     }
-            } else {
-                Preference enablebuttonsettings = findPreference(BUTTON_MANAGE_SUB_KEY);
-                if (enablebuttonsettings != null) {
-                    enablebuttonsettings.setOnPreferenceChangeListener(startConfigServiceListener);
-                    enablebuttonsettings.setOnPreferenceClickListener(
-                            new OnPreferenceClickListener() {
-                    public boolean onPreferenceClick(Preference preference) {
-                        Intent intent = new Intent();
-                        intent.setClassName("com.android.cellbroadcastreceiver",
-                               "com.android.cellbroadcastreceiver.SelectSubscription");
-                        startActivity(intent);
-                        cellbroadcast50 = true;
-                        return true;
-                    }
-                    });
-
-                }
             }
             Preference enableEtwsAlerts = findPreference(KEY_ENABLE_ETWS_TEST_ALERTS);
             if (enableEtwsAlerts != null) {

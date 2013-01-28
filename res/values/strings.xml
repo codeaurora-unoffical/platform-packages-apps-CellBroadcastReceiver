@@ -223,6 +223,7 @@
     </string-array>
 
     <!-- GSM/UMTS Cell broadcast for DSDS strings -->
+    <string name="CellBroadcastChannel50">Cell Broadcast</string>
     <string name="cell_broadcast_sms_title">Cell Broadcast</string>
     <string name="category_brazil_settings_title_sub">Settings for Brazil</string>
 
@@ -233,5 +234,13 @@
     <string name="select_subscription_title">Select Subscription</string>
     <string name="subscription1_title">Subscription 1</string>
     <string name="subscription2_title">Subscription 2</string>
+    <string name="subscription3_title">Subscription 3</string>
+
+    <!--  sub one, setting option name -->
+    <string name="sub1">Subscription 1</string>
+    <!--  sub two, setting option name -->
+    <string name="sub2">Subscription 2</string>
+    <!--  sub three, setting option name -->
+    <string name="sub3">Subscription 3</string>
 
 </resources>

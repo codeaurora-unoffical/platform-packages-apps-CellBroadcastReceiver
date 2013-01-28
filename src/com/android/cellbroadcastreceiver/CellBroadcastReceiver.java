@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,13 @@ import android.telephony.cdma.CdmaSmsCbProgramResults;
 import android.util.Log;
 
 import com.android.internal.telephony.ITelephony;
+import com.android.internal.telephony.MSimConstants;
+
 import com.android.internal.telephony.cdma.sms.SmsEnvelope;
+import com.android.internal.telephony.msim.ITelephonyMSim;
 
 import java.util.ArrayList;
-import static com.android.internal.telephony.MSimConstants.SUBSCRIPTION_KEY;
+
 public class CellBroadcastReceiver extends BroadcastReceiver {
     private static final String TAG = "CellBroadcastReceiver";
     static final boolean DBG = true;    // STOPSHIP: change to false before ship
@@ -227,7 +230,7 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
         }
         Intent serviceIntent = new Intent(action, null,
                 context, CellBroadcastConfigService.class);
-        serviceIntent.putExtra(SUBSCRIPTION_KEY, subscription);
+        serviceIntent.putExtra(MSimConstants.SUBSCRIPTION_KEY, subscription);
         context.startService(serviceIntent);
     }
 
