@@ -41,7 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Iterator;
-import android.telephony.SmsCbConstants;
+//import android.telephony.SmsCbConstants;
 import android.telephony.SmsCbMessage;
 import android.os.Bundle;
 import com.android.internal.telephony.gsm.SmsCbHeader;
