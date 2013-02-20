@@ -89,11 +89,11 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
             if (privileged) {
                 /* LATAM - Adding CB Widget to display channel 50 messages in Brazil */
                 if(Telephony.Sms.Intents.SMS_CB_RECEIVED_ACTION.equals(action))
-					          sendCbToWidget(intent,context);
-				        else{
-					          intent.setClass(context, CellBroadcastAlertService.class);
-	                  context.startService(intent);
-				        }
+                    sendCbToWidget(intent,context);
+                else{
+                    intent.setClass(context, CellBroadcastAlertService.class);
+                    context.startService(intent);
+                }
             } else {
                 Log.e(TAG, "ignoring unprivileged action received " + action);
             }
@@ -267,37 +267,37 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
         }
     }
 
-	  private void sendCbToWidget(Intent intent,Context context) {
-		    Bundle extras = intent.getExtras();
-		    if (extras == null) {
-			      Log.e(TAG, "received " + intent.getAction() + " with no extras!");
-			      return;
-		    }
+    private void sendCbToWidget(Intent intent,Context context) {
+        Bundle extras = intent.getExtras();
+        if (extras == null) {
+            Log.e(TAG, "received " + intent.getAction() + " with no extras!");
+            return;
+        }
+        //Object[] pdus = (Object[]) extras.get("message");
+        //SmsCbMessage message = SmsCbMessage.createFromPdu((byte[]) pdus[0]);
+          SmsCbMessage message = (SmsCbMessage) extras.get("message");
+        if (message == null) {
+            Log.e(TAG, "failed to create SmsCbMessage");
+            return;
+        }
 
-		    Object[] pdus = (Object[]) extras.get("message");
-		    SmsCbMessage message = SmsCbMessage.createFromPdu((byte[]) pdus[0]);
-		    if (message == null) {
-			      Log.e(TAG, "failed to create SmsCbMessage from PDU: " + pdus[0]);
-			      return;
-		    }
-
-		    // append message bodies from any additional PDUs (GSM only)
-		    for (int i = 1; i < pdus.length; i++) {
-			      SmsCbMessage nextPage = SmsCbMessage
-					          .createFromPdu((byte[]) pdus[i]);
-			      if (nextPage != null) {
-				        message.appendToBody(nextPage.getMessageBody());
-			      } else {
-				        Log.w(TAG, "failed to append to SmsCbMessage from PDU: "
-						            + pdus[i]);
-				        // continue so we can show the first page of the broadcast
-			      }
-		    }
-		    Log.d(TAG, "message " + message.getMessageBody());
-		    Intent it = new Intent();
-		    it.setAction("com.qualcomm.intent.cellbroadcastwidget");
-		    it.putExtra("cbvalue", message.getMessageBody());
-		    context.sendBroadcast(it);
+        // append message bodies from any additional PDUs (GSM only)
+        //for (int i = 1; i < pdus.length; i++) {
+        //    SmsCbMessage nextPage = SmsCbMessage
+        //	          .createFromPdu((byte[]) pdus[i]);
+        //    if (nextPage != null) {
+        //        message.appendToBody(nextPage.getMessageBody());
+        //    } else {
+        //        Log.w(TAG, "failed to append to SmsCbMessage from PDU: "
+        //                + pdus[i]);
+                // continue so we can show the first page of the broadcast
+        //    }
+        //}
+        Log.d(TAG, "message " + message.getMessageBody());
+        Intent it = new Intent();
+        it.setAction("com.qualcomm.intent.cellbroadcastwidget");
+        it.putExtra("cbvalue", message.getMessageBody());
+        context.sendBroadcast(it);
     }
 
     private static void log(String msg) {
