@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="cmas_category_met" >Meteorológico</string>
+    <string name="button_dismiss" >OK</string>
+    <string name="button_cancel" >Cancelar</string>
+    <string name="pws_other_message_identifiers" >Alerta de emergência</string>
+    <string name="enable_channel_50_alerts_title" >Ver transmissões do canal 50</string>
+    <string name="cmas_required_monthly_test" >Teste mensal de alertas de emergência</string>
+    <string name="etws_earthquake_warning" >Aviso de terremoto</string>
+    <string name="enable_cmas_amber_alerts_summary" >Mostrar boletins de emergência de sequestro de crianças (alerta AMBER)</string>
+    <string name="cmas_response_heading" >Tipo de resposta:</string>
+    <string name="cb_other_message_identifiers" >Transmissão por celular</string>
+    <string name="cmas_category_cbrne" >Químico/Biológico/Nuclear/Explosivo</string>
+    <string name="emergency_alert_settings_title" >Configurações do alerta de emergência</string>
+    <string name="enable_cmas_extreme_threat_alerts_title" >Mostrar ameaças extremas</string>
+    <string name="cmas_urgency_heading" >Urgência:</string>
+    <string name="notification_multiple" ><xliff:g id="COUNT">%s</xliff:g> alertas não lidos.</string>
+    <string name="confirm_delete_all_broadcasts" >Excluir todas as mensagens recebidas?</string>
+    <string name="cmas_category_fire" >Incêndio</string>
+    <string name="category_brazil_settings_title" >Configurações para o Brasil</string>
+    <string name="enable_emergency_alerts_summary" >Mostrar transmissões de alerta de emergência</string>
+    <string name="no_cell_broadcasts" >Não há alertas ativos em sua área. É possível alterar as configurações de alerta utilizando a opção do menu \"Configurações\".</string>
+    <string name="cmas_presidential_level_alert" >Alerta presidencial</string>
+    <string name="cmas_operator_defined_alert" >Alerta de emergência (telefonista)</string>
+    <string name="enable_cmas_severe_threat_alerts_summary" >Exibir alertas para ameaças graves contra a vida e as propriedades</string>
+    <string name="category_etws_settings_title" >Configurações do ETWS</string>
+    <string name="enable_channel_50_alerts_summary" >O canal 50 é usado no Brasil para informações de atualização de área</string>
+    <string name="message_options" >Opções de mensagem</string>
+    <string name="cmas_urgency_expected" >Agir na próxima hora</string>
+    <string name="cmas_category_health" >Saúde</string>
+    <string name="cmas_severity_severe" >Grave</string>
+    <string name="sms_cb_settings" >Configurações de transmissão por celular</string>
+    <string name="enable_cmas_amber_alerts_title" >Mostrar Alertas AMBER</string>
+    <string name="cmas_response_evacuate" >Evacuar</string>
+    <string name="menu_view" >Ver transmissão</string>
+    <string name="cmas_category_transport" >Transporte</string>
+    <string name="cmas_severity_heading" >Gravidade:</string>
+    <string name="cmas_response_prepare" >Preparar</string>
+    <string name="etws_tsunami_warning" >Aviso de tsunami</string>
+    <string name="cmas_category_infra" >Infraestrutura</string>
+    <string name="notification_multiple_title" >Novos alertas</string>
+    <string name="cmas_response_execute" >Executar atividade</string>
+    <string name="cmas_response_assess" >Avaliar</string>
+    <string name="cmas_category_heading" >Categoria:</string>
+    <string name="cmas_category_other" >Outros</string>
+    <string name="enable_cmas_severe_threat_alerts_title" >Mostrar ameaças graves</string>
+    <string name="cmas_severe_alert" >Alerta de emergência: Grave</string>
+    <string name="cmas_response_shelter" >Encontrar um abrigo</string>
+    <string name="enable_etws_test_alerts_summary" >Mostrar transmissões de teste do Sistema de Aviso de Tsunamis e Terremotos</string>
+    <string name="menu_delete_all" >Excluir transmissões</string>
+    <string name="enable_alert_speech_summary" >Usar conversão de texto em fala para falar mensagens de alerta de emergência</string>
+    <string name="enable_cmas_test_alerts_title" >Mostrar transmissão de teste CMAS</string>
+    <string name="cmas_category_safety" >Segurança</string>
+    <string name="cmas_response_none" >Nenhuma ação</string>
+    <string name="cmas_certainty_heading" >Certeza:</string>
+    <string name="enable_alert_speech_title" >Falar mensagem de alerta</string>
+    <string name="menu_delete" >Excluir transmissão</string>
+    <string name="category_dev_settings_title" >Opções do desenvolvedor</string>
+    <string name="menu_preferences" >Configurações</string>
+    <string name="cmas_urgency_immediate" >Agir imediatamente</string>
+    <string name="cmas_severity_extreme" >Extremo</string>
+    <string name="etws_earthquake_and_tsunami_warning" >Aviso de terremoto e tsunami</string>
+    <string name="enable_etws_test_alerts_title" >Mostrar transmissão de teste ETWS</string>
+    <string name="enable_emergency_alerts_title" >Ativar as notificações</string>
+    <string name="cmas_response_monitor" >Monitorar fontes de informação</string>
+    <string name="enable_cmas_test_alerts_summary" >Exibir transmissões de teste para o Sistema de alertas para celular comercial</string>
+    <string name="enable_cmas_extreme_threat_alerts_summary" >Exibir alertas para ameaças extremas contra a vida e as propriedades</string>
+    <string name="cmas_response_avoid" >Evitar perigo</string>
+    <string name="confirm_delete_broadcast" >Excluir esta transmissão?</string>
+    <string name="alert_sound_duration_title" >Duração do som de alerta</string>
+    <string name="cmas_category_geo" >Geofísico</string>
+    <string name="cmas_category_rescue" >Resgate</string>
+    <string name="cmas_extreme_alert" >Alerta de emergência: Extremo</string>
+    <string name="cmas_certainty_likely" >Provável</string>
+    <string name="cmas_exercise_alert" >Alerta de emergência (exercício)</string>
+    <string name="etws_test_message" >Mensagem de teste do ETWS</string>
+    <string name="cmas_category_security" >Segurança</string>
+    <string name="app_label" >Transmissões por celular</string>
+    <string name="etws_other_emergency_type" >Aviso de emergência</string>
+    <string name="cmas_amber_alert" >Rapto de crianças (Alerta Amber)</string>
+    <string name="cmas_category_env" >Ambiental</string>
+    <string name="cmas_certainty_observed" >Observado</string>
+    <string name="button_delete" >Excluir</string>
+    <string-array name="alert_sound_duration_entries" >
+        <item>"Dois segundos"</item>
+        <item>"Quatro segundos"</item>
+        <item>"Seis segundos"</item>
+        <item>"Oito segundos"</item>
+        <item>"10 segundos"</item>
+    </string-array>
+</resources>
