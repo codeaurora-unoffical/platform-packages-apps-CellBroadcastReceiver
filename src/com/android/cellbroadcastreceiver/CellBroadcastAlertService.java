@@ -28,6 +28,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.SystemProperties;
+import android.os.UserHandle;
 import android.preference.PreferenceManager;
 import android.provider.Telephony;
 import android.telephony.CellBroadcastMessage;
@@ -59,6 +60,10 @@ public class CellBroadcastAlertService extends Service {
 
     /** Check for system property to enable/disable duplicate detection.  */
     static boolean mUseDupDetection = SystemProperties.getBoolean(CB_DUP_DETECTION, true);
+    
+    /** Sticky broadcast for latest area info broadcast received. */
+    static final String CB_AREA_INFO_RECEIVED_ACTION =
+            "android.cellbroadcastreceiver.CB_AREA_INFO_RECEIVED";
 
     /** Container for message ID and geographical scope, for duplicate message detection. */
     private static final class MessageIdAndScope {
@@ -256,6 +261,16 @@ public class CellBroadcastAlertService extends Service {
             }
         }
 
+        if (message.getServiceCategory() == 50) {
+            // save latest area info broadcast for Settings display and send as broadcast
+            CellBroadcastReceiverApp.setLatestAreaInfo(message);
+            Intent intent = new Intent(CB_AREA_INFO_RECEIVED_ACTION);
+            intent.putExtra("message", message);
+            sendBroadcastAsUser(intent, UserHandle.ALL,
+                    android.Manifest.permission.READ_PHONE_STATE);
+            return false;   // area info broadcasts are displayed in Settings status screen
+        }
+
         return true;    // other broadcast messages are always enabled
     }
 
@@ -350,7 +365,7 @@ public class CellBroadcastAlertService extends Service {
                 messageList);
         intent.putExtra(CellBroadcastAlertFullScreen.FROM_NOTIFICATION_EXTRA, true);
 
-        PendingIntent pi = PendingIntent.getActivity(this, 0, intent,
+        PendingIntent pi = PendingIntent.getActivity(this, NOTIFICATION_ID, intent,
                 PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_UPDATE_CURRENT);
 
         // use default sound/vibration/lights for non-emergency broadcasts
