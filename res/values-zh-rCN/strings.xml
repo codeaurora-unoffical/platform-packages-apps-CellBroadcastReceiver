@@ -113,4 +113,11 @@
     <item msgid="7514102744524534421">"8 秒"</item>
     <item msgid="6062562309271376642">"10 秒"</item>
   </string-array>
+  <!-- Used in choose preferred subscription-->
+  <string-array name="select_slot_items">
+    <item>卡槽1</item>
+    <item>卡槽2</item>
+    <item>总是询问</item>
+  </string-array>
+
 </resources>
