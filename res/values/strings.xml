@@ -256,5 +256,11 @@
     <string name="select_subscription_title">Select Subscription</string>
     <string name="subscription1_title">Subscription 1</string>
     <string name="subscription2_title">Subscription 2</string>
+    
+    <!-- Used in choose preferred subscription-->
+    <string-array name="select_slot_items">
+        <item>SLOT1</item>
+        <item>SLOT2</item>
+    </string-array>
 
 </resources>
