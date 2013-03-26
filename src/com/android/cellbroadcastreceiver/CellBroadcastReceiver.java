@@ -64,7 +64,7 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
     }
 
     protected void onReceiveWithPrivilege(Context context, Intent intent, boolean privileged) {
-        if (DBG) log("onReceive " + intent);
+        if (DBG) log(" CBtestlog onReceive " + intent + " privileged = " + privileged);
 
         String action = intent.getAction();
 
@@ -82,23 +82,28 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
             }
         } else if (Telephony.Sms.Intents.SMS_EMERGENCY_CB_RECEIVED_ACTION.equals(action) ||
                 Telephony.Sms.Intents.SMS_CB_RECEIVED_ACTION.equals(action)) {
+                if (DBG) log(" CBtestlog action = " +  action );
             // If 'privileged' is false, it means that the intent was delivered to the base
             // no-permissions receiver class.  If we get an SMS_CB_RECEIVED message that way, it
             // means someone has tried to spoof the message by delivering it outside the normal
             // permission-checked route, so we just ignore it.
             if (privileged) {
                 /* LATAM - Adding CB Widget to display channel 50 messages in Brazil */
-                if(Telephony.Sms.Intents.SMS_CB_RECEIVED_ACTION.equals(action))
+                if(Telephony.Sms.Intents.SMS_CB_RECEIVED_ACTION.equals(action)){
+                    if (DBG) log(" CBtestlog sendToWidget");
                     sendCbToWidget(intent,context);
-                else{
+                }else{
+                    if (DBG) log(" CBtestlog send to CB list");
                     intent.setClass(context, CellBroadcastAlertService.class);
                     context.startService(intent);
                 }
             } else {
+            if (DBG) log(" CBtestlog unprivileged ");
                 Log.e(TAG, "ignoring unprivileged action received " + action);
             }
         } else if (Telephony.Sms.Intents.SMS_SERVICE_CATEGORY_PROGRAM_DATA_RECEIVED_ACTION
                 .equals(action)) {
+                if (DBG) log(" CBtestlog SMS_SERVICE_CATEGORY_PROGRAM_DATA_RECEIVED_ACTION ");
             if (privileged) {
                 String sender = intent.getStringExtra("sender");
                 if (sender == null) {
@@ -123,6 +128,7 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
                 Log.e(TAG, "ignoring unprivileged action received " + action);
             }
         } else {
+        if (DBG) log(" CBtestlog unexpected action ");
             Log.w(TAG, "onReceive() unexpected action " + action);
         }
     }
@@ -270,14 +276,14 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
     private void sendCbToWidget(Intent intent,Context context) {
         Bundle extras = intent.getExtras();
         if (extras == null) {
-            Log.e(TAG, "received " + intent.getAction() + " with no extras!");
+            if (DBG) log(" CBtestlog sendCbToWidget received " + intent.getAction() + " with no extras!");
             return;
         }
         //Object[] pdus = (Object[]) extras.get("message");
         //SmsCbMessage message = SmsCbMessage.createFromPdu((byte[]) pdus[0]);
           SmsCbMessage message = (SmsCbMessage) extras.get("message");
         if (message == null) {
-            Log.e(TAG, "failed to create SmsCbMessage");
+            if (DBG) log(" CBtestlog sendCbToWidget failed to create SmsCbMessage");
             return;
         }
 
@@ -293,7 +299,7 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
                 // continue so we can show the first page of the broadcast
         //    }
         //}
-        Log.d(TAG, "message " + message.getMessageBody());
+        if (DBG) log(" CBtestlog sendCbToWidget message " + message.getMessageBody());
         Intent it = new Intent();
         it.setAction("com.qualcomm.intent.cellbroadcastwidget");
         it.putExtra("cbvalue", message.getMessageBody());

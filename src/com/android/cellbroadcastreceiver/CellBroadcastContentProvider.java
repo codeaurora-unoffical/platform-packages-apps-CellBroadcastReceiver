@@ -211,6 +211,7 @@ public class CellBroadcastContentProvider extends ContentProvider {
     boolean insertNewBroadcast(CellBroadcastMessage message) {
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         ContentValues cv = message.getContentValues();
+        Log.d(TAG,"CBtestlog CBContentprovider mUseDupDetection = " + mUseDupDetection);
 
         if (mUseDupDetection) {
             // Check for existing alert with same serial number and geo scope
@@ -243,20 +244,21 @@ public class CellBroadcastContentProvider extends ContentProvider {
                     selection, selectionArgs, null, null, null);
 
             if (c.getCount() != 0) {
-                Log.d(TAG, "ignoring dup broadcast serial=" + serial + " found " + c.getCount());
+                Log.d(TAG, "CBtestlog ignoring dup broadcast serial=" + serial + " found " + c.getCount());
                 return false;
             }
         }
 
         long rowId = db.insert(CellBroadcastDatabaseHelper.TABLE_NAME, null, cv);
         if (rowId == -1) {
-            Log.e(TAG, "failed to insert new broadcast into database");
+            Log.d(TAG, "CBtestlog failed to insert new broadcast into database");
             // Return true on DB write failure because we still want to notify the user.
             // The CellBroadcastMessage will be passed with the intent, so the message will be
             // displayed in the emergency alert dialog, or the dialog that is displayed when
             // the user selects the notification for a non-emergency broadcast, even if the
             // broadcast could not be written to the database.
         }
+        Log.d(TAG, "CBtestlog broadcast is not a duplicate");
         return true;    // broadcast is not a duplicate
     }
 
@@ -267,6 +269,7 @@ public class CellBroadcastContentProvider extends ContentProvider {
      * @return true if the database was updated, false otherwise
      */
     boolean deleteBroadcast(long rowId, boolean decrementUnreadCount) {
+        Log.d(TAG, "CBtestlog deleteBroadcast");
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
 
         int rowCount = db.delete(CellBroadcastDatabaseHelper.TABLE_NAME,
