@@ -17,6 +17,7 @@
 
 package com.android.cellbroadcastreceiver;
 
+import static com.android.internal.telephony.MSimConstants.SUBSCRIPTION_KEY;
 import android.app.KeyguardManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -32,6 +33,7 @@ import android.os.UserHandle;
 import android.preference.PreferenceManager;
 import android.provider.Telephony;
 import android.telephony.CellBroadcastMessage;
+import android.telephony.MSimTelephonyManager;
 import android.telephony.SmsCbCmasInfo;
 import android.telephony.SmsCbLocation;
 import android.telephony.SmsCbMessage;
@@ -60,7 +62,7 @@ public class CellBroadcastAlertService extends Service {
 
     /** Check for system property to enable/disable duplicate detection.  */
     static boolean mUseDupDetection = SystemProperties.getBoolean(CB_DUP_DETECTION, true);
-
+    private static int mSubscription;
     /** Sticky broadcast for latest area info broadcast received. */
     static final String CB_AREA_INFO_RECEIVED_ACTION =
             "android.cellbroadcastreceiver.CB_AREA_INFO_RECEIVED";
@@ -114,6 +116,10 @@ public class CellBroadcastAlertService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent.getAction();
+        if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+            mSubscription = intent.getIntExtra(SUBSCRIPTION_KEY, 0);
+            Log.d(TAG, "CellBroadcastAlertService onStartCommand: mSubscription = " + mSubscription);
+        }
         if (Telephony.Sms.Intents.SMS_EMERGENCY_CB_RECEIVED_ACTION.equals(action) ||
                 Telephony.Sms.Intents.SMS_CB_RECEIVED_ACTION.equals(action)) {
             handleCellBroadcastIntent(intent);
@@ -231,30 +237,62 @@ public class CellBroadcastAlertService extends Service {
      * @return true if the user has enabled this message type; false otherwise
      */
     private boolean isMessageEnabledByUser(CellBroadcastMessage message) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         if (message.isEtwsTestMessage()) {
-            return PreferenceManager.getDefaultSharedPreferences(this)
-                    .getBoolean(CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS, false);
+            if (!MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                return prefs
+                        .getBoolean(CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS, false);
+            }
+            else {
+                    return prefs
+                            .getBoolean(CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS + mSubscription,
+                                    false);
+            }
         }
 
         if (message.isCmasMessage()) {
             switch (message.getCmasMessageClass()) {
                 case SmsCbCmasInfo.CMAS_CLASS_EXTREME_THREAT:
-                    return PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
-                            CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS, true);
+                    if (!MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                        return prefs.getBoolean(
+                                CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS, true);
+                    } else {
+                        return prefs.getBoolean(
+                                CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS
+                                        + mSubscription, true);
+                    }
 
                 case SmsCbCmasInfo.CMAS_CLASS_SEVERE_THREAT:
-                    return PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
-                            CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS, true);
+                    if (!MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                        return prefs.getBoolean(
+                                CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS, true);
+                    }else{
+                        return prefs.getBoolean(
+                                CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS
+                                        + mSubscription, true);
+                    }
 
                 case SmsCbCmasInfo.CMAS_CLASS_CHILD_ABDUCTION_EMERGENCY:
-                    return PreferenceManager.getDefaultSharedPreferences(this)
-                            .getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS, true);
+                    if (!MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                        return prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS,
+                                true);
+                    } else {
+                        return prefs.getBoolean(
+                                CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS + mSubscription,
+                                true);
+                    }
 
                 case SmsCbCmasInfo.CMAS_CLASS_REQUIRED_MONTHLY_TEST:
                 case SmsCbCmasInfo.CMAS_CLASS_CMAS_EXERCISE:
                 case SmsCbCmasInfo.CMAS_CLASS_OPERATOR_DEFINED_USE:
-                    return PreferenceManager.getDefaultSharedPreferences(this)
-                            .getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS, false);
+                    if (!MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                        return prefs
+                                .getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS, false);
+                    } else {
+                        return prefs
+                                .getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS
+                                        + mSubscription, false);
+                    }
 
                 default:
                     return true;    // presidential-level CMAS alerts are always enabled
@@ -291,16 +329,20 @@ public class CellBroadcastAlertService extends Service {
         audioIntent.setAction(CellBroadcastAlertAudio.ACTION_START_ALERT_AUDIO);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
-        int duration;   // alert audio duration in ms
-        if (message.isCmasMessage()) {
-            // CMAS requirement: duration of the audio attention signal is 10.5 seconds.
-            duration = 10500;
-        } else {
-            duration = Integer.parseInt(prefs.getString(
-                    CellBroadcastSettings.KEY_ALERT_SOUND_DURATION,
-                    CellBroadcastSettings.ALERT_SOUND_DEFAULT_DURATION)) * 1000;
+        String duration;
+        boolean alertSpeech;
+        if (!MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+            duration = prefs.getString(CellBroadcastSettings.KEY_ALERT_SOUND_DURATION,
+                    CellBroadcastSettings.ALERT_SOUND_DEFAULT_DURATION);
+            alertSpeech = prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_SPEECH, true);
+        }else{
+            duration = prefs.getString(CellBroadcastSettings.KEY_ALERT_SOUND_DURATION
+                    + mSubscription,
+                    CellBroadcastSettings.ALERT_SOUND_DEFAULT_DURATION);
+            alertSpeech = prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_SPEECH + mSubscription, true);
         }
-        audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_DURATION_EXTRA, duration);
+        audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_DURATION_EXTRA,
+                Integer.parseInt(duration));
 
         if (message.isEtwsMessage()) {
             // For ETWS, always vibrate, even in silent mode.
@@ -314,7 +356,7 @@ public class CellBroadcastAlertService extends Service {
 
         String messageBody = message.getMessageBody();
 
-        if (prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_SPEECH, true)) {
+        if (alertSpeech) {
             audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_MESSAGE_BODY, messageBody);
 
             String language = message.getLanguageCode();
