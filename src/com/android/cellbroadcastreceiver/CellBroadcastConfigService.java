@@ -249,11 +249,11 @@ public class CellBroadcastConfigService extends IntentService {
                     if (enableCmasExtremeAlerts) {
                         manager.enableCellBroadcastRange(
                                 SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_OBSERVED,
-                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_LIKELY);
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_LIKELY);
                     }
                     if (enableCmasSevereAlerts) {
                         manager.enableCellBroadcastRange(
-                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_IMMEDIATE_OBSERVED,
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_OBSERVED,
                                 SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_EXPECTED_LIKELY);
                     }
                     if (enableCmasAmberAlerts) {
@@ -287,9 +287,9 @@ public class CellBroadcastConfigService extends IntentService {
                             SmsCbConstants.MESSAGE_ID_ETWS_OTHER_EMERGENCY_TYPE);
                     manager.disableCellBroadcastRange(
                             SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_OBSERVED,
-                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_LIKELY);
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_LIKELY);
                     manager.disableCellBroadcastRange(
-                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_IMMEDIATE_OBSERVED,
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_OBSERVED,
                             SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_EXPECTED_LIKELY);
                     manager.disableCellBroadcast(
                             SmsCbConstants.MESSAGE_ID_CMAS_ALERT_CHILD_ABDUCTION_EMERGENCY);
@@ -331,12 +331,12 @@ public class CellBroadcastConfigService extends IntentService {
                 if (DBG) Log.d(TAG, "disabling cell broadcast CMAS extreme");
                 manager.disableCellBroadcastRange(
                         SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_OBSERVED,
-                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_LIKELY);
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_LIKELY);
             }
             if (!enableCmasSevereAlerts) {
                 if (DBG) Log.d(TAG, "disabling cell broadcast CMAS severe");
                 manager.disableCellBroadcastRange(
-                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_IMMEDIATE_OBSERVED,
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_OBSERVED,
                         SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_EXPECTED_LIKELY);
             }
             if (!enableCmasAmberAlerts) {
