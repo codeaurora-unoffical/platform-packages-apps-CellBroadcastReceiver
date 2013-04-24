@@ -95,7 +95,8 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
             }
         } else if (GET_LATEST_CB_AREA_INFO_ACTION.equals(action)) {
             if (privileged) {
-                CellBroadcastMessage message = CellBroadcastReceiverApp.getLatestAreaInfo();
+                int subId = intent.getIntExtra(MSimConstants.SUBSCRIPTION_KEY, 0);
+                CellBroadcastMessage message = CellBroadcastReceiverApp.getLatestAreaInfo(subId);
                 if (message != null) {
                     Intent areaInfoIntent = new Intent(
                             CellBroadcastAlertService.CB_AREA_INFO_RECEIVED_ACTION);
