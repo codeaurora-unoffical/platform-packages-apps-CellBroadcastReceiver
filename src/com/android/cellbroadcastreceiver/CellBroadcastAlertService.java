@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,13 @@ import android.os.UserHandle;
 import android.preference.PreferenceManager;
 import android.provider.Telephony;
 import android.telephony.CellBroadcastMessage;
+import android.telephony.MSimTelephonyManager;
 import android.telephony.SmsCbCmasInfo;
 import android.telephony.SmsCbLocation;
 import android.telephony.SmsCbMessage;
 import android.util.Log;
+
+import com.android.internal.telephony.MSimConstants;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -54,6 +57,8 @@ public class CellBroadcastAlertService extends Service {
 
     /** Use the same notification ID for non-emergency alerts. */
     static final int NOTIFICATION_ID = 1;
+
+    private int mSubscription = MSimConstants.DEFAULT_SUBSCRIPTION;
 
     /** system property to enable/disable broadcast duplicate detecion.  */
     private static final String CB_DUP_DETECTION = "persist.cb.dup_detection";
@@ -151,6 +156,9 @@ public class CellBroadcastAlertService extends Service {
             return;
         }
 
+        mSubscription = intent.getIntExtra(MSimConstants.SUBSCRIPTION_KEY, MSimConstants.SUB1);
+        Log.d(TAG, "handleCellBroadcastIntent: mSubscription = " + mSubscription);
+
         if (mUseDupDetection) {
             // Check for duplicate message IDs according to CMAS carrier requirements. Message IDs
             // are stored in volatile memory. If the maximum of 65535 messages is reached, the
@@ -183,6 +191,7 @@ public class CellBroadcastAlertService extends Service {
         final Intent alertIntent = new Intent(SHOW_NEW_ALERT_ACTION);
         alertIntent.setClass(this, CellBroadcastAlertService.class);
         alertIntent.putExtra("message", cbm);
+        alertIntent.putExtra(MSimConstants.SUBSCRIPTION_KEY, mSubscription);
 
         // write to database on a background thread
         new CellBroadcastContentProvider.AsyncCellBroadcastTask(getContentResolver())
@@ -236,30 +245,33 @@ public class CellBroadcastAlertService extends Service {
      * @return true if the user has enabled this message type; false otherwise
      */
     private boolean isMessageEnabledByUser(CellBroadcastMessage message) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         if (message.isEtwsTestMessage()) {
-            return PreferenceManager.getDefaultSharedPreferences(this)
-                    .getBoolean(CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS, false);
+            return prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS
+                    + mSubscription, false);
         }
 
         if (message.isCmasMessage()) {
             switch (message.getCmasMessageClass()) {
                 case SmsCbCmasInfo.CMAS_CLASS_EXTREME_THREAT:
-                    return PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
-                            CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS, true);
+                    return prefs.getBoolean(
+                            CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS
+                            + mSubscription, true);
 
                 case SmsCbCmasInfo.CMAS_CLASS_SEVERE_THREAT:
-                    return PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
-                            CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS, true);
+                    return prefs.getBoolean(
+                            CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS
+                            + mSubscription, true);
 
                 case SmsCbCmasInfo.CMAS_CLASS_CHILD_ABDUCTION_EMERGENCY:
-                    return PreferenceManager.getDefaultSharedPreferences(this)
-                            .getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS, true);
+                    return prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS
+                            + mSubscription, true);
 
                 case SmsCbCmasInfo.CMAS_CLASS_REQUIRED_MONTHLY_TEST:
                 case SmsCbCmasInfo.CMAS_CLASS_CMAS_EXERCISE:
                 case SmsCbCmasInfo.CMAS_CLASS_OPERATOR_DEFINED_USE:
-                    return PreferenceManager.getDefaultSharedPreferences(this)
-                            .getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS, false);
+                    return prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS
+                            + mSubscription, false);
 
                 default:
                     return true;    // presidential-level CMAS alerts are always enabled
@@ -302,9 +314,10 @@ public class CellBroadcastAlertService extends Service {
             duration = 10500;
         } else {
             duration = Integer.parseInt(prefs.getString(
-                    CellBroadcastSettings.KEY_ALERT_SOUND_DURATION,
-                    CellBroadcastSettings.ALERT_SOUND_DEFAULT_DURATION)) * 1000;
+                    CellBroadcastSettings.KEY_ALERT_SOUND_DURATION + mSubscription,
+                    CellBroadcastSettings.ALERT_SOUND_DEFAULT_DURATION))*1000;
         }
+
         audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_DURATION_EXTRA, duration);
 
         if (message.isEtwsMessage()) {
@@ -319,7 +332,7 @@ public class CellBroadcastAlertService extends Service {
 
         String messageBody = message.getMessageBody();
 
-        if (prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_SPEECH, true)) {
+        if (prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_SPEECH + mSubscription, true)) {
             audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_MESSAGE_BODY, messageBody);
 
             String language = message.getLanguageCode();

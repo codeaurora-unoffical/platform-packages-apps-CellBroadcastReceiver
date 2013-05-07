@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,10 +62,73 @@ public class CellBroadcastConfigService extends IntentService {
     // Note: key name cannot exceeds 32 chars.
     static final String EMERGENCY_BROADCAST_RANGE_CDMA =
             "ro.cb.cdma.emergencyids";
-    private int mSubscription;
+    private int mSubscription = MSimConstants.DEFAULT_SUBSCRIPTION;
 
     public CellBroadcastConfigService() {
         super(TAG);          // use class name for worker thread name
+    }
+
+    private void setMSimChannelRange(MSimSmsManager smsManagerMSim, String ranges,
+            boolean enable, boolean isCdma) {
+        if (DBG) log("setMSimChannelRange: " + ranges);
+
+        try {
+            for (String channelRange : ranges.split(",")) {
+                int dashIndex = channelRange.indexOf('-');
+                if (dashIndex != -1) {
+                    int startId = Integer.decode(channelRange.substring(0, dashIndex).trim());
+                    int endId = Integer.decode(channelRange.substring(dashIndex + 1).trim());
+                    if (enable) {
+                        if (DBG) log("enabling emergency IDs " + startId + '-' + endId);
+                        if (isCdma) {
+                            smsManagerMSim.enableCdmaBroadcastRange(startId, endId,
+                                mSubscription);
+                        } else {
+                            smsManagerMSim.enableCellBroadcastRange(startId, endId,
+                                mSubscription);
+                        }
+                    } else {
+                        if (DBG) log("disabling emergency IDs " + startId + '-' + endId);
+                        if (isCdma) {
+                            smsManagerMSim.disableCdmaBroadcastRange(startId, endId,
+                                mSubscription);
+                        } else {
+                            smsManagerMSim.disableCellBroadcastRange(startId, endId,
+                                mSubscription);
+                        }
+                    }
+                } else {
+                    int messageId = Integer.decode(channelRange.trim());
+                    if (enable) {
+                        if (DBG) log("enabling emergency message ID " + messageId);
+                        if (isCdma) {
+                            smsManagerMSim.enableCdmaBroadcast(messageId, mSubscription);
+                        } else {
+                            smsManagerMSim.enableCellBroadcast(messageId, mSubscription);
+                        }
+                    } else {
+                        if (DBG) log("disabling emergency message ID " + messageId);
+                        if (isCdma) {
+                            smsManagerMSim.disableCdmaBroadcast(messageId, mSubscription);
+                        } else {
+                            smsManagerMSim.disableCellBroadcast(messageId, mSubscription);
+                        }
+                    }
+                }
+            }
+        } catch (NumberFormatException e) {
+            Log.e(TAG, "Number Format Exception parsing emergency channel range", e);
+        }
+
+        // Make sure CMAS Presidential is enabled (See 3GPP TS 22.268 Section 6.2).
+        if (DBG) log("setMSimChannelRange: enabling CMAS Presidential");
+        if (isCdma) {
+            smsManagerMSim.enableCdmaBroadcast(
+                    SmsEnvelope.SERVICE_CATEGORY_CMAS_PRESIDENTIAL_LEVEL_ALERT, mSubscription);
+        } else {
+            smsManagerMSim.enableCellBroadcast(
+                    SmsCbConstants.MESSAGE_ID_CMAS_ALERT_PRESIDENTIAL_LEVEL, mSubscription);
+        }
     }
 
     private void setChannelRange(SmsManager manager, String ranges,
@@ -180,6 +243,155 @@ public class CellBroadcastConfigService extends IntentService {
         }
     }
 
+    private void configMSimGsmChannels(String emergencyIdRange, boolean enableChannel50Alerts,
+            boolean enableEmergencyAlerts, boolean enableEtwsTestAlerts,
+            boolean enableCmasExtremeAlerts, boolean enableCmasSevereAlerts,
+            boolean enableCmasAmberAlerts, boolean enableCmasTestAlerts) {
+        try {
+            if (DBG) {
+                log("CellBroadcastConfigService configMSimGsmChannels  mSubscription  :"
+                        + mSubscription);
+            }
+            MSimSmsManager smsManagerMSim = MSimSmsManager.getDefault();
+            if (enableEmergencyAlerts) {
+                if (DBG)
+                    log("enabling emergency cell broadcast channels");
+                if (!TextUtils.isEmpty(emergencyIdRange)) {
+                    setMSimChannelRange(smsManagerMSim, emergencyIdRange, true, false);
+                } else {
+                    smsManagerMSim.enableCellBroadcastRange(
+                        SmsCbConstants.MESSAGE_ID_ETWS_EARTHQUAKE_WARNING,
+                        SmsCbConstants.MESSAGE_ID_ETWS_EARTHQUAKE_AND_TSUNAMI_WARNING,
+                        mSubscription);
+                    if (enableEtwsTestAlerts) {
+                        smsManagerMSim.enableCellBroadcast(
+                                SmsCbConstants.MESSAGE_ID_ETWS_TEST_MESSAGE,
+                                mSubscription);
+                    }
+                    smsManagerMSim.enableCellBroadcast(
+                            SmsCbConstants.MESSAGE_ID_ETWS_OTHER_EMERGENCY_TYPE,
+                            mSubscription);
+                    if (enableCmasExtremeAlerts) {
+                        smsManagerMSim.enableCellBroadcastRange(
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_OBSERVED,
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_LIKELY,
+                                mSubscription);
+                    }
+                    if (enableCmasSevereAlerts) {
+                        smsManagerMSim.enableCellBroadcastRange(
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_OBSERVED,
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_EXPECTED_LIKELY,
+                                mSubscription);
+                    }
+                    if (enableCmasAmberAlerts) {
+                        smsManagerMSim.enableCellBroadcast(
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_CHILD_ABDUCTION_EMERGENCY,
+                                mSubscription);
+                    }
+                    if (enableCmasTestAlerts) {
+                        smsManagerMSim.enableCellBroadcastRange(
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_REQUIRED_MONTHLY_TEST,
+                                SmsCbConstants.MESSAGE_ID_CMAS_ALERT_OPERATOR_DEFINED_USE,
+                                mSubscription);
+                    }
+                    // CMAS Presidential must be on (See 3GPP TS 22.268 Section 6.2).
+                    smsManagerMSim.enableCellBroadcast(
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_PRESIDENTIAL_LEVEL,
+                            mSubscription);
+                    if (DBG) {
+                        log("enabled emergency cell broadcast channels mSubscription"
+                                + mSubscription);
+                    }
+                }
+                if (DBG) log("enabled emergency cell broadcast channels");
+            } else {
+                // we may have enabled these channels previously, so try to disable them
+                if (DBG) log("disabling emergency cell broadcast channels");
+                if (!TextUtils.isEmpty(emergencyIdRange)) {
+                    setMSimChannelRange(smsManagerMSim, emergencyIdRange, false, false);
+                } else {
+                    smsManagerMSim.disableCellBroadcastRange(
+                            SmsCbConstants.MESSAGE_ID_ETWS_EARTHQUAKE_WARNING,
+                            SmsCbConstants.MESSAGE_ID_ETWS_EARTHQUAKE_AND_TSUNAMI_WARNING,
+                            mSubscription);
+                    smsManagerMSim.disableCellBroadcast(
+                            SmsCbConstants.MESSAGE_ID_ETWS_TEST_MESSAGE, mSubscription);
+                    smsManagerMSim.disableCellBroadcast(
+                            SmsCbConstants.MESSAGE_ID_ETWS_OTHER_EMERGENCY_TYPE, mSubscription);
+                    smsManagerMSim.disableCellBroadcastRange(
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_OBSERVED,
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_LIKELY,
+                            mSubscription);
+                    smsManagerMSim.disableCellBroadcastRange(
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_OBSERVED,
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_EXPECTED_LIKELY,
+                            mSubscription);
+                    smsManagerMSim.disableCellBroadcast(
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_CHILD_ABDUCTION_EMERGENCY,
+                            mSubscription);
+                    smsManagerMSim.disableCellBroadcastRange(
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_REQUIRED_MONTHLY_TEST,
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_OPERATOR_DEFINED_USE,
+                            mSubscription);
+                    smsManagerMSim.enableCellBroadcast(
+                            SmsCbConstants.MESSAGE_ID_CMAS_ALERT_PRESIDENTIAL_LEVEL,
+                            mSubscription);
+                    if (DBG) {
+                        log("disabled emergency cell broadcast channels mSubscription ="
+                                + mSubscription);
+                    }
+                }
+                if (DBG) log("disabled emergency cell broadcast channels");
+            }
+
+            if (enableChannel50Alerts) {
+                if (DBG) log("enabling cell broadcast channel 50");
+                smsManagerMSim.enableCellBroadcast(50, mSubscription);
+                if (DBG) log("enabled cell broadcast channel 50");
+            } else {
+                if (DBG) log("disabling cell broadcast channel 50");
+                smsManagerMSim.disableCellBroadcast(50, mSubscription);
+                if (DBG) log("disabled cell broadcast channel 50");
+            }
+
+            if (!enableEtwsTestAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast ETWS test messages");
+                smsManagerMSim.disableCellBroadcast(
+                        SmsCbConstants.MESSAGE_ID_ETWS_TEST_MESSAGE, mSubscription);
+            }
+            if (!enableCmasExtremeAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS extreme");
+                smsManagerMSim.disableCellBroadcastRange(
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_OBSERVED,
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_IMMEDIATE_LIKELY,
+                        mSubscription);
+            }
+            if (!enableCmasSevereAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS severe");
+                smsManagerMSim.disableCellBroadcastRange(
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_EXTREME_EXPECTED_OBSERVED,
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_SEVERE_EXPECTED_LIKELY,
+                        mSubscription);
+            }
+            if (!enableCmasAmberAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS amber");
+                smsManagerMSim.disableCellBroadcast(
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_CHILD_ABDUCTION_EMERGENCY,
+                        mSubscription);
+            }
+            if (!enableCmasTestAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS test messages");
+                smsManagerMSim.disableCellBroadcastRange(
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_REQUIRED_MONTHLY_TEST,
+                        SmsCbConstants.MESSAGE_ID_CMAS_ALERT_OPERATOR_DEFINED_USE,
+                        mSubscription);
+            }
+        } catch (Exception ex) {
+            Log.e(TAG, "exception enabling cell broadcast channels", ex);
+        }
+    }
+
+
     private void configGsmChannels() {
         try {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -189,7 +401,7 @@ public class CellBroadcastConfigService extends IntentService {
             String emergencyIdRange = SystemProperties.get(EMERGENCY_BROADCAST_RANGE_GSM);
 
             boolean enableEmergencyAlerts = prefs.getBoolean(
-                    CellBroadcastSettings.KEY_ENABLE_EMERGENCY_ALERTS, true);
+                    CellBroadcastSettings.KEY_ENABLE_EMERGENCY_ALERTS + mSubscription, true);
 
             TelephonyManager tm = (TelephonyManager) getSystemService(
                     Context.TELEPHONY_SERVICE);
@@ -199,35 +411,32 @@ public class CellBroadcastConfigService extends IntentService {
 
             boolean enableChannel50Alerts = enableChannel50Support;
 
-            if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                if (mSubscription == 0) {
-                    enableChannel50Alerts = enableChannel50Alerts &&
-                        prefs.getBoolean(
-                              CellBroadcastChannel50Alerts.KEY_ENABLE_CHANNEL_50_ALERTS_SUB1, true);
-                } else {
-                    enableChannel50Alerts = enableChannel50Alerts &&
-                        prefs.getBoolean(
-                              CellBroadcastChannel50Alerts.KEY_ENABLE_CHANNEL_50_ALERTS_SUB2, true);
-                }
-            } else {
-                enableChannel50Alerts = enableChannel50Alerts &&
-                    prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_50_ALERTS, true);
-            }
+            enableChannel50Alerts = enableChannel50Alerts && prefs.getBoolean(
+                    CellBroadcastSettings.KEY_ENABLE_CHANNEL_50_ALERTS + mSubscription, true);
 
             boolean enableEtwsTestAlerts = prefs.getBoolean(
-                    CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS, false);
+                    CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS + mSubscription, false);
 
             boolean enableCmasExtremeAlerts = prefs.getBoolean(
-                    CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS, true);
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS
+                    + mSubscription, true);
 
             boolean enableCmasSevereAlerts = prefs.getBoolean(
-                    CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS, true);
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS
+                    + mSubscription, true);
 
             boolean enableCmasAmberAlerts = prefs.getBoolean(
-                    CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS, true);
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS + mSubscription, true);
 
             boolean enableCmasTestAlerts = prefs.getBoolean(
-                    CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS, false);
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS + mSubscription, false);
+
+            if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                configMSimGsmChannels(emergencyIdRange, enableChannel50Alerts,enableEmergencyAlerts,
+                        enableEtwsTestAlerts, enableCmasExtremeAlerts, enableCmasSevereAlerts,
+                        enableCmasAmberAlerts, enableCmasTestAlerts);
+                        return;
+            }
 
             SmsManager manager = SmsManager.getDefault();
             if (enableEmergencyAlerts) {
@@ -304,21 +513,11 @@ public class CellBroadcastConfigService extends IntentService {
 
             if (enableChannel50Alerts) {
                 if (DBG) log("enabling cell broadcast channel 50");
-                if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                    MSimSmsManager smsManagerMSim = MSimSmsManager.getDefault();
-                    smsManagerMSim.enableCellBroadcast(50, mSubscription);
-                } else {
-                    manager.enableCellBroadcast(50);
-                }
+                manager.enableCellBroadcast(50);
                 if (DBG) log("enabled cell broadcast channel 50");
             } else {
                 if (DBG) log("disabling cell broadcast channel 50");
-                if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                    MSimSmsManager smsManagerMSim = MSimSmsManager.getDefault();
-                    smsManagerMSim.disableCellBroadcast(50, mSubscription);
-                } else {
-                    manager.disableCellBroadcast(50);
-                }
+                manager.disableCellBroadcast(50);
                 if (DBG) log("disabled cell broadcast channel 50");
             }
 
@@ -355,6 +554,98 @@ public class CellBroadcastConfigService extends IntentService {
         }
     }
 
+    private void configMSimCdmaChannels(String emergencyIdRange, boolean enableEmergencyAlerts,
+                    boolean enableCmasExtremeAlerts, boolean enableCmasSevereAlerts,
+                    boolean enableCmasAmberAlerts, boolean enableCmasTestAlerts) {
+        try {
+            if (DBG) {
+                log("CellBroadcastConfigService configCdmaChannels  mSubscription :"
+                        + mSubscription);
+            }
+
+            MSimSmsManager smsManagerMSim = MSimSmsManager.getDefault();
+            if (enableEmergencyAlerts) {
+                if (DBG) log("enabling emergency cdma broadcast channels");
+                if (!TextUtils.isEmpty(emergencyIdRange)) {
+                    setMSimChannelRange(smsManagerMSim, emergencyIdRange, true, true);
+                } else {
+                    if (enableCmasExtremeAlerts) {
+                        smsManagerMSim.enableCdmaBroadcast(
+                                SmsEnvelope.SERVICE_CATEGORY_CMAS_EXTREME_THREAT,
+                                mSubscription);
+                    }
+                    if (enableCmasSevereAlerts) {
+                        smsManagerMSim.enableCdmaBroadcast(
+                                SmsEnvelope.SERVICE_CATEGORY_CMAS_SEVERE_THREAT, mSubscription);
+                    }
+                    if (enableCmasAmberAlerts) {
+                        smsManagerMSim.enableCdmaBroadcast(
+                                SmsEnvelope.SERVICE_CATEGORY_CMAS_CHILD_ABDUCTION_EMERGENCY,
+                                mSubscription);
+                    }
+                    if (enableCmasTestAlerts) {
+                        smsManagerMSim.enableCdmaBroadcast(
+                                SmsEnvelope.SERVICE_CATEGORY_CMAS_TEST_MESSAGE, mSubscription);
+                    }
+                    // CMAS Presidential must be on.
+                    smsManagerMSim.enableCdmaBroadcast(
+                            SmsEnvelope.SERVICE_CATEGORY_CMAS_PRESIDENTIAL_LEVEL_ALERT,
+                            mSubscription);
+                }
+                if (DBG) log("enabled emergency cdma broadcast channels");
+            } else {
+                // we may have enabled these channels previously, so try to
+                // disable them
+                if (DBG) log("disabling emergency cdma broadcast channels");
+                if (!TextUtils.isEmpty(emergencyIdRange)) {
+                    setMSimChannelRange(smsManagerMSim, emergencyIdRange, false, true);
+                } else {
+                    // No emergency channel system property, disable all emergency channels
+                    smsManagerMSim.disableCdmaBroadcast(
+                            SmsEnvelope.SERVICE_CATEGORY_CMAS_EXTREME_THREAT, mSubscription);
+                    smsManagerMSim.disableCdmaBroadcast(
+                            SmsEnvelope.SERVICE_CATEGORY_CMAS_SEVERE_THREAT, mSubscription);
+                    smsManagerMSim.disableCdmaBroadcast(
+                            SmsEnvelope.SERVICE_CATEGORY_CMAS_CHILD_ABDUCTION_EMERGENCY,
+                            mSubscription);
+                    smsManagerMSim.disableCdmaBroadcast(
+                            SmsEnvelope.SERVICE_CATEGORY_CMAS_TEST_MESSAGE, mSubscription);
+
+                    // CMAS Presidential must be on.
+                    smsManagerMSim.enableCdmaBroadcast(
+                            SmsEnvelope.SERVICE_CATEGORY_CMAS_PRESIDENTIAL_LEVEL_ALERT,
+                            mSubscription);
+                }
+                if (DBG) log("disabled emergency cdma broadcast channels");
+            }
+
+            if (!enableCmasExtremeAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS extreme");
+                smsManagerMSim.disableCdmaBroadcast(
+                        SmsEnvelope.SERVICE_CATEGORY_CMAS_EXTREME_THREAT, mSubscription);
+            }
+            if (enableCmasSevereAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS severe");
+                smsManagerMSim.disableCdmaBroadcast(
+                        SmsEnvelope.SERVICE_CATEGORY_CMAS_SEVERE_THREAT, mSubscription);
+            }
+            if (!enableCmasAmberAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS amber");
+                 smsManagerMSim.disableCdmaBroadcast(
+                        SmsEnvelope.SERVICE_CATEGORY_CMAS_CHILD_ABDUCTION_EMERGENCY,
+                        mSubscription);
+            }
+            if (!enableCmasTestAlerts) {
+                if (DBG) Log.d(TAG, "disabling cell broadcast CMAS test");
+                smsManagerMSim.disableCdmaBroadcast(
+                        SmsEnvelope.SERVICE_CATEGORY_CMAS_TEST_MESSAGE, mSubscription);
+            }
+        } catch (Exception ex) {
+            Log.e(TAG, "exception enabling cdma broadcast channels", ex);
+        }
+    }
+
+
     private void configCdmaChannels() {
         try {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -364,20 +655,28 @@ public class CellBroadcastConfigService extends IntentService {
             String emergencyIdRange = SystemProperties.get(EMERGENCY_BROADCAST_RANGE_CDMA);
 
             boolean enableEmergencyAlerts = prefs.getBoolean(
-                    CellBroadcastSettings.KEY_ENABLE_EMERGENCY_ALERTS, true);
+                    CellBroadcastSettings.KEY_ENABLE_EMERGENCY_ALERTS + mSubscription, true);
 
             boolean enableCmasExtremeAlerts = prefs.getBoolean(
-                    CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS, true);
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS
+                    + mSubscription, true);
 
             boolean enableCmasSevereAlerts = prefs.getBoolean(
-                    CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS, true);
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS
+                    + mSubscription, true);
 
             boolean enableCmasAmberAlerts = prefs.getBoolean(
-                    CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS, true);
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS + mSubscription, true);
 
             boolean enableCmasTestAlerts = prefs.getBoolean(
-                    CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS, false);
+                    CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS + mSubscription, false);
 
+            if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                configMSimCdmaChannels(emergencyIdRange, enableEmergencyAlerts,
+                    enableCmasExtremeAlerts, enableCmasSevereAlerts, enableCmasAmberAlerts,
+                    enableCmasTestAlerts);
+                return;
+            }
             SmsManager manager = SmsManager.getDefault();
             if (enableEmergencyAlerts) {
                 if (DBG) log("enabling emergency cdma broadcast channels");
