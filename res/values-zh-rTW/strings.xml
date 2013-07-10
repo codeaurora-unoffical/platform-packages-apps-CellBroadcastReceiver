@@ -106,6 +106,15 @@
     <string name="cmas_opt_out_dialog_text" msgid="7529010670998259128">"您目前已設為接收緊急警示，是否要繼續接收？"</string>
     <string name="cmas_opt_out_button_yes" msgid="7248930667195432936">"是"</string>
     <string name="cmas_opt_out_button_no" msgid="3110484064328538553">"否"</string>
+    <!-- GSM/UMTS Cell broadcast for DSDS strings -->
+    <string name="cell_broadcast_sms_title">"區域廣播"</string>
+    <string name="category_brazil_settings_title_sub">"巴西專用設定"</string>
+    <string name="cb_settings_sel_sub">"選取SIM卡"</string>
+    <string name="summary_manage_subscriptions">"管理雙卡的區域廣播設定"</string>
+    <!-- Subscription selection strings -->
+    <string name="select_subscription_title">"選取SIM卡"</string>
+    <string name="subscription1_title">"卡1"</string>
+    <string name="subscription2_title">"卡2"</string>
   <string-array name="alert_sound_duration_entries">
     <item msgid="5353482200312892037">"2 秒"</item>
     <item msgid="5656092384277009212">"4 秒"</item>
