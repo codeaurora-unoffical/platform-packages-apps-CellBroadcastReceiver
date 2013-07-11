@@ -36,6 +36,7 @@ import android.telephony.MSimTelephonyManager;
 import android.telephony.SmsCbCmasInfo;
 import android.telephony.SmsCbLocation;
 import android.telephony.SmsCbMessage;
+import com.android.internal.telephony.MSimConstants;
 import android.util.Log;
 
 import com.android.internal.telephony.MSimConstants;
@@ -143,6 +144,7 @@ public class CellBroadcastAlertService extends Service {
         }
 
         SmsCbMessage message = (SmsCbMessage) extras.get("message");
+        int subId = intent.getIntExtra(MSimConstants.SUBSCRIPTION_KEY, 0);
 
         if (message == null) {
             Log.e(TAG, "received SMS_CB_RECEIVED_ACTION with no message extra");
@@ -150,6 +152,7 @@ public class CellBroadcastAlertService extends Service {
         }
 
         final CellBroadcastMessage cbm = new CellBroadcastMessage(message);
+        cbm.setSubId(subId);
         if (!isMessageEnabledByUser(cbm)) {
             Log.d(TAG, "ignoring alert of type " + cbm.getServiceCategory() +
                     " by user preference");
