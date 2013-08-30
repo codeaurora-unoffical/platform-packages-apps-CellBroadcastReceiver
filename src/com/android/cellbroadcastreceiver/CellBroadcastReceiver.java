@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +28,7 @@ import android.os.UserHandle;
 import android.preference.PreferenceManager;
 import android.provider.Telephony;
 import android.telephony.CellBroadcastMessage;
+import android.telephony.MSimTelephonyManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
@@ -43,6 +45,7 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
 
     private static final String GET_LATEST_CB_AREA_INFO_ACTION =
             "android.cellbroadcastreceiver.GET_LATEST_CB_AREA_INFO";
+    private int mSubscription = MSimConstants.DEFAULT_SUBSCRIPTION;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -64,7 +67,9 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
             boolean airplaneModeOn = intent.getBooleanExtra("state", false);
             if (DBG) log("airplaneModeOn: " + airplaneModeOn);
             if (!airplaneModeOn) {
-                startConfigService(context);
+                for (int i = 0; i < MSimTelephonyManager.getDefault().getPhoneCount(); i++){
+                    startConfigService(context, i);
+                }
             }
         } else if (Telephony.Sms.Intents.SMS_EMERGENCY_CB_RECEIVED_ACTION.equals(action) ||
                 Telephony.Sms.Intents.SMS_CB_RECEIVED_ACTION.equals(action)) {
@@ -81,6 +86,9 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
         } else if (Telephony.Sms.Intents.SMS_SERVICE_CATEGORY_PROGRAM_DATA_RECEIVED_ACTION
                 .equals(action)) {
             if (privileged) {
+                mSubscription = intent.getIntExtra(MSimConstants.SUBSCRIPTION_KEY,
+                    MSimConstants.SUB1);
+                Log.d(TAG, "onReceive SMS_CATEGORY_PROGRAM_DATA mSubscription :" + mSubscription);
                 CdmaSmsCbProgramData[] programDataList = (CdmaSmsCbProgramData[])
                         intent.getParcelableArrayExtra("program_data_list");
                 if (programDataList != null) {
@@ -148,33 +156,42 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
 
     private void tryCdmaSetCategory(Context context, int category, boolean enable) {
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+        String key = null;
 
         switch (category) {
             case SmsEnvelope.SERVICE_CATEGORY_CMAS_EXTREME_THREAT:
-                sharedPrefs.edit().putBoolean(
-                        CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS, enable)
-                        .apply();
+                key = CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS + mSubscription;
                 break;
 
             case SmsEnvelope.SERVICE_CATEGORY_CMAS_SEVERE_THREAT:
-                sharedPrefs.edit().putBoolean(
-                        CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS, enable)
-                        .apply();
+                key = CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS + mSubscription;
                 break;
 
             case SmsEnvelope.SERVICE_CATEGORY_CMAS_CHILD_ABDUCTION_EMERGENCY:
-                sharedPrefs.edit().putBoolean(
-                        CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS, enable).apply();
+                key = CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS + mSubscription;
                 break;
 
             case SmsEnvelope.SERVICE_CATEGORY_CMAS_TEST_MESSAGE:
-                sharedPrefs.edit().putBoolean(
-                        CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS, enable).apply();
+                key = CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS + mSubscription;
                 break;
 
             default:
                 Log.w(TAG, "Ignoring SCPD command to " + (enable ? "enable" : "disable")
                         + " alerts in category " + category);
+        }
+        if (null != key) sharedPrefs.edit().putBoolean(key, enable).apply();
+    }
+
+    private static boolean isNormalStatus(int sub){
+        //we take this sim status as normal for cell broadcast
+        int subStatus  = MSimTelephonyManager.getDefault().getSimState(sub);
+        if (subStatus == TelephonyManager.SIM_STATE_PIN_REQUIRED ||
+            subStatus == TelephonyManager.SIM_STATE_PUK_REQUIRED ||
+            subStatus == TelephonyManager.SIM_STATE_NETWORK_LOCKED ||
+            subStatus == TelephonyManager.SIM_STATE_READY) {
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -182,9 +199,13 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
      * Tell {@link CellBroadcastConfigService} to enable the CB channels.
      * @param context the broadcast receiver context
      */
-    static void startConfigService(Context context) {
+    static void startConfigService(Context context,int subscription) {
+        if (!isNormalStatus(subscription))
+            return;
+        Log.d(TAG, "startConfigService subscription = " + subscription);
         Intent serviceIntent = new Intent(CellBroadcastConfigService.ACTION_ENABLE_CHANNELS,
                 null, context, CellBroadcastConfigService.class);
+        serviceIntent.putExtra(MSimConstants.SUBSCRIPTION_KEY, subscription);
         context.startService(serviceIntent);
     }
 
@@ -204,7 +225,7 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
         return isCdma;
     }
 
-    private static class ServiceStateListener extends PhoneStateListener {
+    private class ServiceStateListener extends PhoneStateListener {
         private final Context mContext;
         private int mServiceState = -1;
 
@@ -220,7 +241,9 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
                 mServiceState = newState;
                 if (newState == ServiceState.STATE_IN_SERVICE ||
                         newState == ServiceState.STATE_EMERGENCY_ONLY) {
-                    startConfigService(mContext);
+                    for(int i = 0; i < MSimTelephonyManager.getDefault().getPhoneCount(); i++){
+                        startConfigService(mContext, i);
+                    }
                 }
             }
         }

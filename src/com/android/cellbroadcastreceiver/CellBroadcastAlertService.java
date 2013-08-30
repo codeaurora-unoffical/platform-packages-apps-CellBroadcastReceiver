@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +28,18 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.UserHandle;
+import android.os.SystemProperties;
 import android.preference.PreferenceManager;
 import android.provider.Telephony;
 import android.telephony.CellBroadcastMessage;
+import android.telephony.MSimTelephonyManager;
 import android.telephony.SmsCbCmasInfo;
 import android.telephony.SmsCbLocation;
 import android.telephony.SmsCbMessage;
 import com.android.internal.telephony.MSimConstants;
 import android.util.Log;
+
+import com.android.internal.telephony.MSimConstants;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -54,23 +59,35 @@ public class CellBroadcastAlertService extends Service {
     /** Use the same notification ID for non-emergency alerts. */
     static final int NOTIFICATION_ID = 1;
 
+    private int mSubscription = MSimConstants.DEFAULT_SUBSCRIPTION;
+
     /** Sticky broadcast for latest area info broadcast received. */
     static final String CB_AREA_INFO_RECEIVED_ACTION =
             "android.cellbroadcastreceiver.CB_AREA_INFO_RECEIVED";
+    /** system property to enable/disable broadcast duplicate detecion.  */
+    private static final String CB_DUP_DETECTION = "persist.cb.dup_detection";
+
+    /** Check for system property to enable/disable duplicate detection.  */
+    static boolean mUseDupDetection = SystemProperties.getBoolean(CB_DUP_DETECTION, true);
 
     /** Container for message ID and geographical scope, for duplicate message detection. */
     private static final class MessageIdAndScope {
         private final int mMessageId;
+        private final int mSerialNumber;
         private final SmsCbLocation mLocation;
 
-        MessageIdAndScope(int messageId, SmsCbLocation location) {
+        MessageIdAndScope(int messageId, int serialNumber, SmsCbLocation location) {
             mMessageId = messageId;
+            mSerialNumber = serialNumber;
             mLocation = location;
         }
 
         @Override
         public int hashCode() {
-            return mMessageId * 31 + mLocation.hashCode();
+            int hash = mLocation.hashCode();
+            hash = hash * 31 + mMessageId;
+            hash = hash * 31 + mSerialNumber;
+            return hash;
         }
 
         @Override
@@ -80,14 +97,17 @@ public class CellBroadcastAlertService extends Service {
             }
             if (o instanceof MessageIdAndScope) {
                 MessageIdAndScope other = (MessageIdAndScope) o;
-                return (mMessageId == other.mMessageId && mLocation.equals(other.mLocation));
+                return (mMessageId == other.mMessageId &&
+                        mSerialNumber == other.mSerialNumber &&
+                        mLocation.equals(other.mLocation));
             }
             return false;
         }
 
         @Override
         public String toString() {
-            return "{messageId: " + mMessageId + " location: " + mLocation.toString() + '}';
+            return "{messageId: " + mMessageId + " serial number: " + mSerialNumber +
+                    " location: " + mLocation.toString() + '}';
         }
     }
 
@@ -141,36 +161,42 @@ public class CellBroadcastAlertService extends Service {
             return;
         }
 
-        // Check for duplicate message IDs according to CMAS carrier requirements. Message IDs
-        // are stored in volatile memory. If the maximum of 65535 messages is reached, the
-        // message ID of the oldest message is deleted from the list.
-        MessageIdAndScope newMessageId = new MessageIdAndScope(message.getSerialNumber(),
-                message.getLocation());
+        mSubscription = intent.getIntExtra(MSimConstants.SUBSCRIPTION_KEY, MSimConstants.SUB1);
+        Log.d(TAG, "handleCellBroadcastIntent: mSubscription = " + mSubscription);
 
-        // Add the new message ID to the list. It's okay if this is a duplicate message ID,
-        // because the list is only used for removing old message IDs from the hash set.
-        if (sCmasIdList.size() < MAX_MESSAGE_ID_SIZE) {
-            sCmasIdList.add(newMessageId);
-        } else {
-            // Get oldest message ID from the list and replace with the new message ID.
-            MessageIdAndScope oldestId = sCmasIdList.get(sCmasIdListIndex);
-            sCmasIdList.set(sCmasIdListIndex, newMessageId);
-            Log.d(TAG, "message ID limit reached, removing oldest message ID " + oldestId);
-            // Remove oldest message ID from the set.
-            sCmasIdSet.remove(oldestId);
-            if (++sCmasIdListIndex >= MAX_MESSAGE_ID_SIZE) {
-                sCmasIdListIndex = 0;
+        if (mUseDupDetection) {
+            // Check for duplicate message IDs according to CMAS carrier requirements. Message IDs
+            // are stored in volatile memory. If the maximum of 65535 messages is reached, the
+            // message ID of the oldest message is deleted from the list.
+            MessageIdAndScope newMessageId = new MessageIdAndScope(message.getServiceCategory(),
+                message.getSerialNumber(), message.getLocation());
+
+            // Add the new message ID to the list. It's okay if this is a duplicate message ID,
+            // because the list is only used for removing old message IDs from the hash set.
+            if (sCmasIdList.size() < MAX_MESSAGE_ID_SIZE) {
+                sCmasIdList.add(newMessageId);
+            } else {
+                // Get oldest message ID from the list and replace with the new message ID.
+                MessageIdAndScope oldestId = sCmasIdList.get(sCmasIdListIndex);
+                sCmasIdList.set(sCmasIdListIndex, newMessageId);
+                Log.d(TAG, "message ID limit reached, removing oldest message ID " + oldestId);
+                // Remove oldest message ID from the set.
+                sCmasIdSet.remove(oldestId);
+                if (++sCmasIdListIndex >= MAX_MESSAGE_ID_SIZE) {
+                    sCmasIdListIndex = 0;
+                }
             }
-        }
-        // Set.add() returns false if message ID has already been added
-        if (!sCmasIdSet.add(newMessageId)) {
-            Log.d(TAG, "ignoring duplicate alert with " + newMessageId);
-            return;
+            // Set.add() returns false if message ID has already been added
+            if (!sCmasIdSet.add(newMessageId)) {
+                Log.d(TAG, "ignoring duplicate alert with " + newMessageId);
+                return;
+            }
         }
 
         final Intent alertIntent = new Intent(SHOW_NEW_ALERT_ACTION);
         alertIntent.setClass(this, CellBroadcastAlertService.class);
         alertIntent.putExtra("message", cbm);
+        alertIntent.putExtra(MSimConstants.SUBSCRIPTION_KEY, mSubscription);
 
         // write to database on a background thread
         new CellBroadcastContentProvider.AsyncCellBroadcastTask(getContentResolver())
@@ -224,30 +250,33 @@ public class CellBroadcastAlertService extends Service {
      * @return true if the user has enabled this message type; false otherwise
      */
     private boolean isMessageEnabledByUser(CellBroadcastMessage message) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         if (message.isEtwsTestMessage()) {
-            return PreferenceManager.getDefaultSharedPreferences(this)
-                    .getBoolean(CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS, false);
+            return prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS
+                    + mSubscription, false);
         }
 
         if (message.isCmasMessage()) {
             switch (message.getCmasMessageClass()) {
                 case SmsCbCmasInfo.CMAS_CLASS_EXTREME_THREAT:
-                    return PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
-                            CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS, true);
+                    return prefs.getBoolean(
+                            CellBroadcastSettings.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS
+                            + mSubscription, true);
 
                 case SmsCbCmasInfo.CMAS_CLASS_SEVERE_THREAT:
-                    return PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
-                            CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS, true);
+                    return prefs.getBoolean(
+                            CellBroadcastSettings.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS
+                            + mSubscription, true);
 
                 case SmsCbCmasInfo.CMAS_CLASS_CHILD_ABDUCTION_EMERGENCY:
-                    return PreferenceManager.getDefaultSharedPreferences(this)
-                            .getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS, true);
+                    return prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_AMBER_ALERTS
+                            + mSubscription, true);
 
                 case SmsCbCmasInfo.CMAS_CLASS_REQUIRED_MONTHLY_TEST:
                 case SmsCbCmasInfo.CMAS_CLASS_CMAS_EXERCISE:
                 case SmsCbCmasInfo.CMAS_CLASS_OPERATOR_DEFINED_USE:
-                    return PreferenceManager.getDefaultSharedPreferences(this)
-                            .getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS, false);
+                    return prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS
+                            + mSubscription, false);
 
                 default:
                     return true;    // presidential-level CMAS alerts are always enabled
@@ -290,9 +319,10 @@ public class CellBroadcastAlertService extends Service {
             duration = 10500;
         } else {
             duration = Integer.parseInt(prefs.getString(
-                    CellBroadcastSettings.KEY_ALERT_SOUND_DURATION,
-                    CellBroadcastSettings.ALERT_SOUND_DEFAULT_DURATION)) * 1000;
+                    CellBroadcastSettings.KEY_ALERT_SOUND_DURATION + mSubscription,
+                    CellBroadcastSettings.ALERT_SOUND_DEFAULT_DURATION))*1000;
         }
+
         audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_DURATION_EXTRA, duration);
 
         if (message.isEtwsMessage()) {
@@ -307,7 +337,7 @@ public class CellBroadcastAlertService extends Service {
 
         String messageBody = message.getMessageBody();
 
-        if (prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_SPEECH, true)) {
+        if (prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_SPEECH + mSubscription, true)) {
             audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_MESSAGE_BODY, messageBody);
 
             String language = message.getLanguageCode();
