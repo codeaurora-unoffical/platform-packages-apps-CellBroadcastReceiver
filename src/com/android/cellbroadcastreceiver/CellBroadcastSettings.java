@@ -100,7 +100,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
     public static final String KEY_ALERT_REMINDER_INTERVAL = "alert_reminder_interval";
 
     public static String[] subTag = { "SIM1", "SIM2" };
-    public int mSubscription = MSimConstants.DEFAULT_SUBSCRIPTION;
+    public static int mSubscription = MSimConstants.DEFAULT_SUBSCRIPTION;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -162,7 +162,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
     /**
      * New fragment-style implementation of preferences.
      */
-    public class CellBroadcastSettingsFragment extends PreferenceFragment {
+    public static class CellBroadcastSettingsFragment extends PreferenceFragment {
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
