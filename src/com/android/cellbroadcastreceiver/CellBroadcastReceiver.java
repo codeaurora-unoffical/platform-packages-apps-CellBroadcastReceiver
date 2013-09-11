@@ -107,6 +107,7 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
                     Intent areaInfoIntent = new Intent(
                             CellBroadcastAlertService.CB_AREA_INFO_RECEIVED_ACTION);
                     areaInfoIntent.putExtra("message", message);
+                    areaInfoIntent.putExtra("subscription", message.getSubId());
                     context.sendBroadcastAsUser(areaInfoIntent, UserHandle.ALL,
                             android.Manifest.permission.READ_PHONE_STATE);
                 }
