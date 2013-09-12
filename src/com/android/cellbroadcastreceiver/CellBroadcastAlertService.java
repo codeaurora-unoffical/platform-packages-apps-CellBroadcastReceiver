@@ -287,6 +287,7 @@ public class CellBroadcastAlertService extends Service {
             // save latest area info broadcast for Settings display and send as broadcast
             CellBroadcastReceiverApp.setLatestAreaInfo(message);
             Intent intent = new Intent(CB_AREA_INFO_RECEIVED_ACTION);
+            intent.putExtra("subscription", message.getSubId());
             intent.putExtra("message", message);
             sendBroadcastAsUser(intent, UserHandle.ALL,
                     android.Manifest.permission.READ_PHONE_STATE);
