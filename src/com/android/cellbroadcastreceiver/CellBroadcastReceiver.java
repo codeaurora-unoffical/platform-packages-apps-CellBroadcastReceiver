@@ -24,6 +24,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.RemoteException;
 import android.os.ServiceManager;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.preference.PreferenceManager;
 import android.provider.Telephony;
@@ -77,7 +78,8 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
             // no-permissions receiver class.  If we get an SMS_CB_RECEIVED message that way, it
             // means someone has tried to spoof the message by delivering it outside the normal
             // permission-checked route, so we just ignore it.
-            if (privileged) {
+            boolean enableCB = SystemProperties.getBoolean("persist.env.cb.enable", true);
+            if (privileged && enableCB) {
                 intent.setClass(context, CellBroadcastAlertService.class);
                 context.startService(intent);
             } else {
