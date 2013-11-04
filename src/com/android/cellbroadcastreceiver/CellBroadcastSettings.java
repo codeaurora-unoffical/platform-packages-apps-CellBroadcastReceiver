@@ -164,6 +164,9 @@ public class CellBroadcastSettings extends PreferenceActivity {
      */
     public static class CellBroadcastSettingsFragment extends PreferenceFragment {
 
+        public CellBroadcastSettingsFragment() {
+        }
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
