@@ -94,6 +94,16 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/category_carrier_settings_title"
+                        android:key="category_carrier_settings">
+
+        <CheckBoxPreference android:defaultValue="true"
+                        android:key="enable_channel_60_alerts"
+                        android:summary="@string/enable_channel_60_alerts_summary"
+                        android:title="@string/enable_channel_60_alerts_title" />
+
+    </PreferenceCategory>
+
     <!-- Only visible when Developer options toggle is enabled in Settings. -->
     <PreferenceCategory android:title="@string/category_dev_settings_title"
                         android:key="category_dev_settings">
