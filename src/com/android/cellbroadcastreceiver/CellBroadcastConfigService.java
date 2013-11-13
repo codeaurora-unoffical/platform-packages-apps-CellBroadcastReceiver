@@ -110,7 +110,7 @@ public class CellBroadcastConfigService extends IntentService {
     //please keep the process the same as onHandleIntent,  just extend it for MSIM.
     private void configMSimChannels(String emergencyIdRange, boolean enableChannel50Alerts,
             boolean enableEmergencyAlerts, boolean enableEtwsTestAlerts,
-            boolean enableCmasExtremeAlerts, boolean enableCmasSevereAlerts,
+            boolean enableCmasExtremeAlerts, boolean enableCmasSevereAlerts, boolean enableChannel60Alerts,
             boolean enableCmasAmberAlerts, boolean enableCmasTestAlerts, int cmasExtremeStart,
             int cmasExtremeEnd, int cmasSevereStart, int cmasSevereEnd, int cmasAmber,
             int cmasTestStart, int cmasTestEnd, int cmasPresident, boolean isCdma) {
@@ -343,6 +343,10 @@ public class CellBroadcastConfigService extends IntentService {
                         prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_50_ALERTS
                         + mSubscription, true);
 
+                boolean enableChannel60Alerts = SystemProperties.getBoolean("persist.env.channel60", false) &&
+                        prefs.getBoolean(
+                                CellBroadcastSettings.KEY_ENABLE_CHANNEL_60_ALERTS, true);
+
                 // Note:  ETWS is for 3GPP only
                 boolean enableEtwsTestAlerts = prefs.getBoolean(
                         CellBroadcastSettings.KEY_ENABLE_ETWS_TEST_ALERTS + mSubscription, false);
@@ -391,8 +395,8 @@ public class CellBroadcastConfigService extends IntentService {
                         "" : SystemProperties.get(EMERGENCY_BROADCAST_RANGE_GSM);
 
                 if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                    configMSimChannels(emergencyIdRange, enableChannel50Alerts,
-                            enableEmergencyAlerts,  enableEtwsTestAlerts, enableCmasExtremeAlerts,
+                    configMSimChannels(emergencyIdRange, enableChannel50Alerts, enableChannel60Alerts,
+                            enableEmergencyAlerts, enableEtwsTestAlerts, enableCmasExtremeAlerts,
                             enableCmasSevereAlerts, enableCmasAmberAlerts, enableCmasTestAlerts,
                             cmasExtremeStart, cmasExtremeEnd, cmasSevereStart, cmasSevereEnd,
                             cmasAmber, cmasTestStart, cmasTestEnd, cmasPresident, isCdma);

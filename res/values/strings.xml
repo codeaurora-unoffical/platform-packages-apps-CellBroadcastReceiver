@@ -138,7 +138,12 @@
     <string name="enable_channel_50_alerts_title">Show channel 50 broadcasts</string>
     <!-- Preference summary for enable channel 50 alerts (Brazil only). [CHAR LIMIT=100] -->
     <string name="enable_channel_50_alerts_summary">Channel 50 is used in Brazil for area update information</string>
-
+    <!-- Preference category title for carrier settings. [CHAR LIMIT=50] -->
+    <string name="category_carrier_settings_title">Settings for Carrier</string>
+    <!-- Preference title for enable channel 60 alerts (Carrier only). [CHAR LIMIT=30] -->
+    <string name="enable_channel_60_alerts_title">Show channel 60 broadcasts</string>
+    <!-- Preference summary for enable channel 60 alerts (Carrier only). [CHAR LIMIT=100] -->
+    <string name="enable_channel_60_alerts_summary">Channel 60 is used in Carrier for area update information</string>
     <!-- Preference category title for developer settings. [CHAR LIMIT=50] -->
     <string name="category_dev_settings_title">Developer options</string>
 

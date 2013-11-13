@@ -24,6 +24,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.os.SystemProperties;
 import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -89,9 +90,14 @@ public class CellBroadcastSettings extends PreferenceActivity {
     // Preference category for Brazil specific settings.
     public static final String KEY_CATEGORY_BRAZIL_SETTINGS = "category_brazil_settings";
 
+    // Preference category for Carrier specific settings.
+    public static final String KEY_CATEGORY_CARRIER_SETTINGS = "category_carrier_settings";
+
     // Preference key for whether to enable channel 50 notifications
     // Enabled by default for phones sold in Brazil, otherwise this setting may be hidden.
     public static final String KEY_ENABLE_CHANNEL_50_ALERTS = "enable_channel_50_alerts";
+
+    public static final String KEY_ENABLE_CHANNEL_60_ALERTS = "enable_channel_60_alerts";
 
     // Preference key for initial opt-in/opt-out dialog.
     public static final String KEY_SHOW_CMAS_OPT_OUT_DIALOG = "show_cmas_opt_out_dialog";
@@ -186,6 +192,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     (ListPreference) findPreference(KEY_ALERT_SOUND_DURATION);
             final CheckBoxPreference enableChannel50Alerts =
                     (CheckBoxPreference) findPreference(KEY_ENABLE_CHANNEL_50_ALERTS);
+            final CheckBoxPreference enableChannel60Alerts =
+                    (CheckBoxPreference) findPreference(KEY_ENABLE_CHANNEL_60_ALERTS);
             final CheckBoxPreference enableEtwsAlerts =
                     (CheckBoxPreference) findPreference(KEY_ENABLE_ETWS_TEST_ALERTS);
             final CheckBoxPreference enableCmasExtremeAlerts =
@@ -207,6 +215,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     + mSubscription, ALERT_SOUND_DEFAULT_DURATION));
             enableChannel50Alerts.setChecked(prefs.getBoolean(
                     KEY_ENABLE_CHANNEL_50_ALERTS + mSubscription, true));
+            enableChannel60Alerts.setChecked(prefs.getBoolean(
+                    KEY_ENABLE_CHANNEL_60_ALERTS + mSubscription, true));
             enableEtwsAlerts.setChecked(prefs.getBoolean(
                     KEY_ENABLE_ETWS_TEST_ALERTS + mSubscription, false));
             enableCmasExtremeAlerts.setChecked(prefs.getBoolean(
@@ -232,6 +242,9 @@ public class CellBroadcastSettings extends PreferenceActivity {
                                 + mSubscription, Boolean.valueOf((value)));
                     } else if (pref == enableChannel50Alerts) {
                         editor.putBoolean(KEY_ENABLE_CHANNEL_50_ALERTS
+                                + mSubscription, Boolean.valueOf((value)));
+                    } else if(pref == enableChannel60Alerts){
+                        editor.putBoolean(KEY_ENABLE_CHANNEL_60_ALERTS
                                 + mSubscription, Boolean.valueOf((value)));
                     } else if (pref == enableEtwsAlerts) {
                         editor.putBoolean(KEY_ENABLE_ETWS_TEST_ALERTS
@@ -323,12 +336,20 @@ public class CellBroadcastSettings extends PreferenceActivity {
             if (!enableChannel50Support) {
                 preferenceScreen.removePreference(findPreference(KEY_CATEGORY_BRAZIL_SETTINGS));
             }
+
+            if (!SystemProperties.getBoolean("persist.env.channel60", false)) {
+                preferenceScreen.removePreference(findPreference(KEY_CATEGORY_CARRIER_SETTINGS));
+            }
+
             if (!enableDevSettings) {
                 preferenceScreen.removePreference(findPreference(KEY_CATEGORY_DEV_SETTINGS));
             }
 
             if (enableChannel50Alerts != null) {
                 enableChannel50Alerts.setOnPreferenceChangeListener(startConfigServiceListener);
+            }
+            if (enableChannel60Alerts != null) {
+                enableChannel60Alerts.setOnPreferenceChangeListener(startConfigServiceListener);
             }
 
             if (enableEtwsAlerts != null) {
