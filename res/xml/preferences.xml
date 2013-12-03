@@ -91,13 +91,7 @@
                         android:key="enable_channel_50_alerts"
                         android:summary="@string/enable_channel_50_alerts_summary"
                         android:title="@string/enable_channel_50_alerts_title" />
-
-    </PreferenceCategory>
-
-    <PreferenceCategory android:title="@string/category_carrier_settings_title"
-                        android:key="category_carrier_settings">
-
-        <CheckBoxPreference android:defaultValue="true"
+    <CheckBoxPreference android:defaultValue="true"
                         android:key="enable_channel_60_alerts"
                         android:summary="@string/enable_channel_60_alerts_summary"
                         android:title="@string/enable_channel_60_alerts_title" />

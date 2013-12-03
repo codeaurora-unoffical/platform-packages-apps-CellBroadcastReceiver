@@ -90,9 +90,6 @@ public class CellBroadcastSettings extends PreferenceActivity {
     // Preference category for Brazil specific settings.
     public static final String KEY_CATEGORY_BRAZIL_SETTINGS = "category_brazil_settings";
 
-    // Preference category for Carrier specific settings.
-    public static final String KEY_CATEGORY_CARRIER_SETTINGS = "category_carrier_settings";
-
     // Preference key for whether to enable channel 50 notifications
     // Enabled by default for phones sold in Brazil, otherwise this setting may be hidden.
     public static final String KEY_ENABLE_CHANNEL_50_ALERTS = "enable_channel_50_alerts";
@@ -335,10 +332,6 @@ public class CellBroadcastSettings extends PreferenceActivity {
 
             if (!enableChannel50Support) {
                 preferenceScreen.removePreference(findPreference(KEY_CATEGORY_BRAZIL_SETTINGS));
-            }
-
-            if (!SystemProperties.getBoolean("persist.env.channel60", false)) {
-                preferenceScreen.removePreference(findPreference(KEY_CATEGORY_CARRIER_SETTINGS));
             }
 
             if (!enableDevSettings) {

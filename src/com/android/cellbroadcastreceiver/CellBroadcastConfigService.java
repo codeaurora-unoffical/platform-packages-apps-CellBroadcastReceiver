@@ -192,15 +192,26 @@ public class CellBroadcastConfigService extends IntentService {
             }
 
             if (isCdma) {
-                if (DBG) log("channel 50 is not aplicable for cdma");
-            } else if (enableChannel50Alerts) {
-                if (DBG) log("enabling cell broadcast channel 50");
-                smsManagerMSim.enableCellBroadcast(50, mSubscription);
-                if (DBG) log("enabled cell broadcast channel 50");
+                if (DBG) log("channel 50 and 60 are not aplicable for cdma");
             } else {
-                if (DBG) log("disabling cell broadcast channel 50");
-                smsManagerMSim.disableCellBroadcast(50, mSubscription);
-                if (DBG) log("disabled cell broadcast channel 50");
+                if (enableChannel50Alerts) {
+                    if (DBG) log("enabling cell broadcast channel 50");
+                    smsManagerMSim.enableCellBroadcast(50, mSubscription);
+                    if (DBG) log("enabled cell broadcast channel 50");
+                } else {
+                    if (DBG) log("disabling cell broadcast channel 50");
+                    smsManagerMSim.disableCellBroadcast(50, mSubscription);
+                    if (DBG) log("disabled cell broadcast channel 50");
+                }
+                if (enableChannel60Alerts) {
+                    if (DBG) log("enabling cell broadcast channel 60");
+                    smsManagerMSim.enableCellBroadcast(60, mSubscription);
+                    if (DBG) log("enabled cell broadcast channel 60");
+                } else {
+                    if (DBG) log("disabling cell broadcast channel 60");
+                    smsManagerMSim.disableCellBroadcast(60, mSubscription);
+                    if (DBG) log("disabled cell broadcast channel 60");
+                }
             }
 
             // Disable per user preference/checkbox.
@@ -343,9 +354,9 @@ public class CellBroadcastConfigService extends IntentService {
                         prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_50_ALERTS
                         + mSubscription, true);
 
-                boolean enableChannel60Alerts = SystemProperties.getBoolean("persist.env.channel60", false) &&
-                        prefs.getBoolean(
-                                CellBroadcastSettings.KEY_ENABLE_CHANNEL_60_ALERTS, true);
+                boolean enableChannel60Alerts = enableChannel50Support &&
+                        prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_60_ALERTS
+                        + mSubscription, true);
 
                 // Note:  ETWS is for 3GPP only
                 boolean enableEtwsTestAlerts = prefs.getBoolean(
