@@ -211,9 +211,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
             duration.setValue(prefs.getString(KEY_ALERT_SOUND_DURATION
                     + mSubscription, ALERT_SOUND_DEFAULT_DURATION));
             enableChannel50Alerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_CHANNEL_50_ALERTS + mSubscription, true));
+                    KEY_ENABLE_CHANNEL_50_ALERTS + mSubscription,
+                    SystemProperties.getBoolean("persist.env.channel50.status", true)));
             enableChannel60Alerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_CHANNEL_60_ALERTS + mSubscription, true));
+                    KEY_ENABLE_CHANNEL_60_ALERTS + mSubscription,
+                    SystemProperties.getBoolean("persist.env.channel60.status", true)));
             enableEtwsAlerts.setChecked(prefs.getBoolean(
                     KEY_ENABLE_ETWS_TEST_ALERTS + mSubscription, false));
             enableCmasExtremeAlerts.setChecked(prefs.getBoolean(

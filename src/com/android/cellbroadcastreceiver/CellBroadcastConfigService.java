@@ -108,9 +108,10 @@ public class CellBroadcastConfigService extends IntentService {
     }
 
     //please keep the process the same as onHandleIntent,  just extend it for MSIM.
-    private void configMSimChannels(String emergencyIdRange, boolean enableChannel50Alerts,
+    private void configMSimChannels(String emergencyIdRange,
+            boolean enableChannel50Alerts, boolean enableChannel60Alerts,
             boolean enableEmergencyAlerts, boolean enableEtwsTestAlerts,
-            boolean enableCmasExtremeAlerts, boolean enableCmasSevereAlerts, boolean enableChannel60Alerts,
+            boolean enableCmasExtremeAlerts, boolean enableCmasSevereAlerts,
             boolean enableCmasAmberAlerts, boolean enableCmasTestAlerts, int cmasExtremeStart,
             int cmasExtremeEnd, int cmasSevereStart, int cmasSevereEnd, int cmasAmber,
             int cmasTestStart, int cmasTestEnd, int cmasPresident, boolean isCdma) {
@@ -352,11 +353,11 @@ public class CellBroadcastConfigService extends IntentService {
 
                 boolean enableChannel50Alerts = enableChannel50Support &&
                         prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_50_ALERTS
-                        + mSubscription, true);
+                        + mSubscription, SystemProperties.getBoolean("persist.env.channel50.status", true));
 
                 boolean enableChannel60Alerts = enableChannel50Support &&
                         prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_60_ALERTS
-                        + mSubscription, true);
+                        + mSubscription, SystemProperties.getBoolean("persist.env.channel60.status", true));
 
                 // Note:  ETWS is for 3GPP only
                 boolean enableEtwsTestAlerts = prefs.getBoolean(
