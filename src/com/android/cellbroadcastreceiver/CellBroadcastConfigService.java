@@ -318,7 +318,7 @@ public class CellBroadcastConfigService extends IntentService {
                 }
 
                 if (isCdma) {
-                    if (DBG) log("channel 50 is not aplicable for cdma");
+                    if (DBG) log("channel 50 is not applicable for cdma");
                 } else if (enableChannel50Alerts) {
                     if (DBG) log("enabling cell broadcast channel 50");
                     enableCellBroadcast(50, isMSim);
@@ -327,6 +327,14 @@ public class CellBroadcastConfigService extends IntentService {
                     if (DBG) log("disabling cell broadcast channel 50");
                     disableCellBroadcast(50, isMSim);
                     if (DBG) log("disabled cell broadcast channel 50");
+                }
+
+                if ("il".equals(tm.getSimCountryIso()) || "il".equals(tm.getNetworkCountryIso())) {
+                    if (DBG) log("enabling channels 919-928 for Israel");
+                    enableCellBroadcastRange(919, 928, isMSim);
+                } else {
+                    if (DBG) log("disabling channels 919-928");
+                    disableCellBroadcastRange(919, 928, isMSim);
                 }
 
                 // Disable per user preference/checkbox.
