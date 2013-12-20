@@ -37,6 +37,7 @@ import android.telephony.cdma.CdmaSmsCbProgramData;
 import android.util.Log;
 
 import com.android.internal.telephony.ITelephony;
+import com.android.internal.telephony.msim.ITelephonyMSim;
 import com.android.internal.telephony.MSimConstants;
 import com.android.internal.telephony.cdma.sms.SmsEnvelope;
 
@@ -215,12 +216,22 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
     /**
      * @return true if the phone is a CDMA phone type
      */
-    static boolean phoneIsCdma() {
+    static boolean phoneIsCdma(int subscription) {
         boolean isCdma = false;
         try {
-            ITelephony phone = ITelephony.Stub.asInterface(ServiceManager.checkService("phone"));
-            if (phone != null) {
-                isCdma = (phone.getActivePhoneType() == TelephonyManager.PHONE_TYPE_CDMA);
+            if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+                ITelephonyMSim phoneMsim = ITelephonyMSim.Stub.asInterface(
+                        ServiceManager.checkService("phone_msim"));
+                if (phoneMsim != null) {
+                    isCdma = (phoneMsim.getActivePhoneType(subscription) ==
+                            TelephonyManager.PHONE_TYPE_CDMA);
+                }
+            } else {
+                ITelephony phone = ITelephony.Stub.asInterface(
+                        ServiceManager.checkService("phone"));
+                if (phone != null) {
+                    isCdma = (phone.getActivePhoneType() == TelephonyManager.PHONE_TYPE_CDMA);
+                }
             }
         } catch (RemoteException e) {
             Log.w(TAG, "phone.getActivePhoneType() failed", e);
