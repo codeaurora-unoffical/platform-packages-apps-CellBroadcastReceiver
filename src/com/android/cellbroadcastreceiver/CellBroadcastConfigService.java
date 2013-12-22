@@ -55,13 +55,15 @@ public class CellBroadcastConfigService extends IntentService {
 
     static final String EMERGENCY_BROADCAST_RANGE_GSM =
             "ro.cb.gsm.emergencyids";
-    private int mSubscription;
+
+    private int mSubscription = MSimConstants.DEFAULT_SUBSCRIPTION;
 
     public CellBroadcastConfigService() {
         super(TAG);          // use class name for worker thread name
     }
 
-    private static void setChannelRange(SmsManager manager, String ranges, boolean enable) {
+    private static void setChannelRange(SmsManager manager, String ranges, boolean enable,
+            boolean isCdma) {
         if (DBG)log("setChannelRange: " + ranges);
 
         try {
@@ -94,7 +96,7 @@ public class CellBroadcastConfigService extends IntentService {
 
         // Make sure CMAS Presidential is enabled (See 3GPP TS 22.268 Section 6.2).
         if (DBG) log("setChannelRange: enabling CMAS Presidential");
-        if (CellBroadcastReceiver.phoneIsCdma()) {
+        if (isCdma) {
             manager.enableCellBroadcast(SmsEnvelope.SERVICE_CATEGORY_CMAS_PRESIDENTIAL_LEVEL_ALERT);
         } else {
             manager.enableCellBroadcast(SmsCbConstants.MESSAGE_ID_CMAS_ALERT_PRESIDENTIAL_LEVEL);
@@ -113,7 +115,7 @@ public class CellBroadcastConfigService extends IntentService {
         }
 
         // Check for system property defining the emergency channel ranges to enable
-        String emergencyIdRange = (CellBroadcastReceiver.phoneIsCdma()) ?
+        String emergencyIdRange = (CellBroadcastReceiver.phoneIsCdma(message.getSubId())) ?
                 "" : SystemProperties.get(EMERGENCY_BROADCAST_RANGE_GSM);
 
         if (TextUtils.isEmpty(emergencyIdRange)) {
@@ -207,7 +209,7 @@ public class CellBroadcastConfigService extends IntentService {
                 int cmasPresident = SmsCbConstants.MESSAGE_ID_CMAS_ALERT_PRESIDENTIAL_LEVEL;
 
                 // set to CDMA broadcast ID rage if phone is in CDMA mode.
-                boolean isCdma = CellBroadcastReceiver.phoneIsCdma();
+                boolean isCdma = CellBroadcastReceiver.phoneIsCdma(mSubscription);
                 if (isCdma) {
                     cmasExtremeStart = SmsEnvelope.SERVICE_CATEGORY_CMAS_EXTREME_THREAT;
                     cmasExtremeEnd = cmasExtremeStart;
@@ -226,7 +228,7 @@ public class CellBroadcastConfigService extends IntentService {
                 if (enableEmergencyAlerts) {
                     if (DBG) log("enabling emergency cell broadcast channels");
                     if (!TextUtils.isEmpty(emergencyIdRange)) {
-                        setChannelRange(manager, emergencyIdRange, true);
+                        setChannelRange(manager, emergencyIdRange, true, isCdma);
                     } else {
                         // No emergency channel system property, enable all emergency channels
                         // that have checkbox checked
@@ -261,7 +263,7 @@ public class CellBroadcastConfigService extends IntentService {
                     // we may have enabled these channels previously, so try to disable them
                     if (DBG) log("disabling emergency cell broadcast channels");
                     if (!TextUtils.isEmpty(emergencyIdRange)) {
-                        setChannelRange(manager, emergencyIdRange, false);
+                        setChannelRange(manager, emergencyIdRange, false, isCdma);
                     } else {
                         // No emergency channel system property, disable all emergency channels
                         // except for CMAS Presidential (See 3GPP TS 22.268 Section 6.2)
