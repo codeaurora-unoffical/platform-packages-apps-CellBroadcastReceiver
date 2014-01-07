@@ -163,9 +163,10 @@ public class CellBroadcastConfigService extends IntentService {
 
                 TelephonyManager tm = (TelephonyManager) getSystemService(
                         Context.TELEPHONY_SERVICE);
-
-                boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings) ||
-                        "br".equals(tm.getSimCountryIso());
+                String country = tm.getSimCountryIso(subId[0]);
+                boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings)
+                        || "br".equals(country) || res.getBoolean(R.bool.show_india_settings)
+                        || "in".equals(country);
 
                 boolean enableChannel60Support = res.getBoolean(R.bool.show_india_settings)
                         || "in".equals(tm.getSimCountryIso());
