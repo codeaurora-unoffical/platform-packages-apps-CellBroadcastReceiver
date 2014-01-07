@@ -163,9 +163,10 @@ public class CellBroadcastConfigService extends IntentService {
 
                 TelephonyManager tm = (TelephonyManager) getSystemService(
                         Context.TELEPHONY_SERVICE);
-
-                boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings) ||
-                        "br".equals(tm.getSimCountryIso());
+                String country = tm.getSimCountryIso(subId[0]);
+                boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings)
+                        || "br".equals(country) || res.getBoolean(R.bool.show_india_settings)
+                        || "in".equals(country);
 
                 boolean enableChannel60Support = res.getBoolean(R.bool.show_india_settings)
                         || "in".equals(tm.getSimCountryIso());
@@ -343,11 +344,11 @@ public class CellBroadcastConfigService extends IntentService {
                     if (DBG) log("channel 60 is not applicable for cdma");
                 } else if (enableChannel60Alerts) {
                     if (DBG) log("enabling cell broadcast channel 60");
-                    manager.enableCellBroadcast(60);
+                    manager.enableCellBroadcast(60, SmsManager.CELL_BROADCAST_RAN_TYPE_GSM);
                     if (DBG) log("enabled cell broadcast channel 60");
                 } else {
                     if (DBG) log("disabling cell broadcast channel 60");
-                    manager.disableCellBroadcast(60);
+                    manager.disableCellBroadcast(60, SmsManager.CELL_BROADCAST_RAN_TYPE_GSM);
                     if (DBG) log("disabled cell broadcast channel 60");
                 }
 
