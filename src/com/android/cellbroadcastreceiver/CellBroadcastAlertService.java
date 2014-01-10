@@ -291,7 +291,7 @@ public class CellBroadcastAlertService extends Service {
             intent.putExtra("message", message);
             sendBroadcastAsUser(intent, UserHandle.ALL,
                     android.Manifest.permission.READ_PHONE_STATE);
-            return false;   // area info broadcasts are displayed in Settings status screen
+            return true;   // area info broadcasts are displayed in Settings status screen
         }
 
         return true;    // other broadcast messages are always enabled
