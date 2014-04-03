@@ -110,13 +110,13 @@ public class CellBroadcastSettings extends PreferenceActivity {
     public static final String ALERT_REMINDER_INTERVAL_DEFAULT_DURATION = "0";
 
     public static String subTag = "SUB";
-    public int mSubscription = MSimConstants.DEFAULT_SUBSCRIPTION;
+    public static int sSubscription = MSimConstants.DEFAULT_SUBSCRIPTION;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-            mSubscription = MSimConstants.SUB1;
+            sSubscription = MSimConstants.SUB1;
             final ActionBar actionBar = getActionBar();
             actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
             actionBar.setDisplayShowTitleEnabled(true);
@@ -148,8 +148,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
         @Override
         public void onTabSelected(Tab tab, FragmentTransaction ft) {
             ft.add(android.R.id.content, mFragment, tag);
-            mSubscription = subScription;
-            Log.d(TAG, "onTabSelected  mSubscription:" + mSubscription);
+            sSubscription = subScription;
+            Log.d(TAG, "onTabSelected  sSubscription:" + sSubscription);
         }
 
         @Override
@@ -168,12 +168,12 @@ public class CellBroadcastSettings extends PreferenceActivity {
     /**
      * New fragment-style implementation of preferences.
      */
-    public class CellBroadcastSettingsFragment extends PreferenceFragment {
+    public static class CellBroadcastSettingsFragment extends PreferenceFragment {
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-            Log.d(TAG, "onCreate CellBroadcastSettingsFragment  mSubscription :" + mSubscription);
+            Log.d(TAG, "onCreate CellBroadcastSettingsFragment  sSubscription :" + sSubscription);
             // Load the preferences from an XML resource
             addPreferencesFromResource(R.xml.preferences);
 
@@ -209,39 +209,39 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     (CheckBoxPreference) findPreference(KEY_ENABLE_ALERT_VIBRATE);
 
             final int idx = interval.findIndexOfValue(
-                    (String)prefs.getString(KEY_ALERT_REMINDER_INTERVAL + mSubscription,
+                    (String)prefs.getString(KEY_ALERT_REMINDER_INTERVAL + sSubscription,
                     ALERT_REMINDER_INTERVAL_DEFAULT_DURATION));
             interval.setSummary(interval.getEntries()[idx]);
             interval.setValue(prefs.getString(KEY_ALERT_REMINDER_INTERVAL
-                    + mSubscription, ALERT_REMINDER_INTERVAL_DEFAULT_DURATION));
+                    + sSubscription, ALERT_REMINDER_INTERVAL_DEFAULT_DURATION));
 
             final int index = duration.findIndexOfValue(
-                    (String)prefs.getString(KEY_ALERT_SOUND_DURATION + mSubscription,
+                    (String)prefs.getString(KEY_ALERT_SOUND_DURATION + sSubscription,
                     ALERT_SOUND_DEFAULT_DURATION));
             duration.setSummary(duration.getEntries()[index]);
             duration.setValue(prefs.getString(KEY_ALERT_SOUND_DURATION
-                    + mSubscription, ALERT_SOUND_DEFAULT_DURATION));
+                    + sSubscription, ALERT_SOUND_DEFAULT_DURATION));
 
             enablePwsAlerts.setChecked(prefs.getBoolean( KEY_ENABLE_EMERGENCY_ALERTS
-                    + mSubscription, true));
+                    + sSubscription, true));
             enableChannel50Alerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_CHANNEL_50_ALERTS + mSubscription, true));
+                    KEY_ENABLE_CHANNEL_50_ALERTS + sSubscription, true));
             enableChannel60Alerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_CHANNEL_60_ALERTS + mSubscription, true));
+                    KEY_ENABLE_CHANNEL_60_ALERTS + sSubscription, true));
             enableEtwsAlerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_ETWS_TEST_ALERTS + mSubscription, false));
+                    KEY_ENABLE_ETWS_TEST_ALERTS + sSubscription, false));
             enableCmasExtremeAlerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS + mSubscription, true));
+                    KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS + sSubscription, true));
             enableCmasSevereAlerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS + mSubscription, true));
+                    KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS + sSubscription, true));
             enableCmasAmberAlerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_CMAS_AMBER_ALERTS + mSubscription, true));
+                    KEY_ENABLE_CMAS_AMBER_ALERTS + sSubscription, true));
             enableCmasTestAlerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_CMAS_TEST_ALERTS + mSubscription, false));
+                    KEY_ENABLE_CMAS_TEST_ALERTS + sSubscription, false));
             enableSpeakerAlerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_ALERT_SPEECH + mSubscription, true));
+                    KEY_ENABLE_ALERT_SPEECH + sSubscription, true));
             enableVibrateAlerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_ALERT_VIBRATE + mSubscription, true));
+                    KEY_ENABLE_ALERT_VIBRATE + sSubscription, true));
 
             // Handler for settings that require us to reconfigure enabled channels in radio
             Preference.OnPreferenceChangeListener startConfigServiceListener =
@@ -253,31 +253,31 @@ public class CellBroadcastSettings extends PreferenceActivity {
 
                     if (pref == enablePwsAlerts) {
                         editor.putBoolean(KEY_ENABLE_EMERGENCY_ALERTS
-                                + mSubscription, Boolean.valueOf((value)));
+                                + sSubscription, Boolean.valueOf((value)));
                     } else if (pref == enableChannel50Alerts) {
                         editor.putBoolean(KEY_ENABLE_CHANNEL_50_ALERTS
-                                + mSubscription, Boolean.valueOf((value)));
+                                + sSubscription, Boolean.valueOf((value)));
                     } else if(pref == enableChannel60Alerts){
                         editor.putBoolean(KEY_ENABLE_CHANNEL_60_ALERTS
-                                + mSubscription, Boolean.valueOf((value)));
+                                + sSubscription, Boolean.valueOf((value)));
                     } else if (pref == enableEtwsAlerts) {
                         editor.putBoolean(KEY_ENABLE_ETWS_TEST_ALERTS
-                                + mSubscription, Boolean.valueOf((value)));
+                                + sSubscription, Boolean.valueOf((value)));
                     } else if (pref == enableCmasExtremeAlerts) {
                         editor.putBoolean(KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS
-                                + mSubscription, Boolean.valueOf((value)));
+                                + sSubscription, Boolean.valueOf((value)));
                     } else if (pref == enableCmasSevereAlerts) {
                         editor.putBoolean(KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS
-                                + mSubscription, Boolean.valueOf((value)));
+                                + sSubscription, Boolean.valueOf((value)));
                     } else if (pref == enableCmasAmberAlerts) {
                         editor.putBoolean(KEY_ENABLE_CMAS_AMBER_ALERTS
-                                + mSubscription, Boolean.valueOf((value)));
+                                + sSubscription, Boolean.valueOf((value)));
                     } else if (pref == enableCmasTestAlerts) {
                         editor.putBoolean(KEY_ENABLE_CMAS_TEST_ALERTS
-                                + mSubscription, Boolean.valueOf((value)));
+                                + sSubscription, Boolean.valueOf((value)));
                     }
                     editor.commit();
-                    CellBroadcastReceiver.startConfigService(pref.getContext(), mSubscription);
+                    CellBroadcastReceiver.startConfigService(pref.getContext(), sSubscription);
 
                     return true;
                 }
@@ -293,14 +293,14 @@ public class CellBroadcastSettings extends PreferenceActivity {
 
                     if (pref == enableSpeakerAlerts) {
                         editor.putBoolean(KEY_ENABLE_ALERT_SPEECH
-                                + mSubscription, Boolean.valueOf((value)));
+                                + sSubscription, Boolean.valueOf((value)));
                     } else if (pref == enableVibrateAlerts) {
                         editor.putBoolean(KEY_ENABLE_ALERT_VIBRATE
-                                + mSubscription, Boolean.valueOf((value)));
+                                + sSubscription, Boolean.valueOf((value)));
                     } else if (pref == interval) {
                         final int idx = interval.findIndexOfValue((String) newValue);
 
-                        editor.putString(KEY_ALERT_REMINDER_INTERVAL  + mSubscription,
+                        editor.putString(KEY_ALERT_REMINDER_INTERVAL  + sSubscription,
                                 String.valueOf(newValue));
                         interval.setSummary(interval.getEntries()[idx]);
                     }
@@ -329,7 +329,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     public boolean onPreferenceChange(Preference pref, Object newValue) {
                         final int idx = duration.findIndexOfValue((String) newValue);
                         duration.setSummary(duration.getEntries()[idx]);
-                        prefs.edit().putString(KEY_ALERT_SOUND_DURATION  + mSubscription,
+                        prefs.edit().putString(KEY_ALERT_SOUND_DURATION  + sSubscription,
                             String.valueOf(newValue)).commit();
                         return true;
                     }
@@ -358,7 +358,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
             boolean isMSim = MSimTelephonyManager.getDefault().isMultiSimEnabled();
             String country = "";
             if (isMSim) {
-                country = MSimTelephonyManager.getDefault().getSimCountryIso(mSubscription);
+                country = MSimTelephonyManager.getDefault().getSimCountryIso(sSubscription);
             } else {
                 country = tm.getSimCountryIso();
             }
