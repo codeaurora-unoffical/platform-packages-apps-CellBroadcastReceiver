@@ -123,4 +123,7 @@
     <item msgid="5676933700148002666">"每隔15分钟"</item>
     <item msgid="694355015442188708">"关"</item>
   </string-array>
+
+    <string name="sub1">"卡 1"</string>
+    <string name="sub2">"卡 2"</string>
 </resources>

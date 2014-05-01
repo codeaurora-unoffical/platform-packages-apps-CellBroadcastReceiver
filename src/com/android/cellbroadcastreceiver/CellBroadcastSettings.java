@@ -108,9 +108,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
 
     // Default reminder interval is off.
     public static final String ALERT_REMINDER_INTERVAL_DEFAULT_DURATION = "0";
-
-    public static String subTag = "SUB";
     public static int sSubscription = MSimConstants.DEFAULT_SUBSCRIPTION;
+    private static int[] subString = {R.string.sub1, R.string.sub2};
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -121,9 +120,10 @@ public class CellBroadcastSettings extends PreferenceActivity {
             actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
             actionBar.setDisplayShowTitleEnabled(true);
             for (int i = 0; i < MSimTelephonyManager.getDefault().getPhoneCount(); i++) {
-                actionBar.addTab(actionBar.newTab().setText(subTag+(i+1)).setTabListener(
+                String tabLabel = getString(subString[i]);
+                actionBar.addTab(actionBar.newTab().setText(tabLabel).setTabListener(
                         new MySubTabListener(new CellBroadcastSettingsFragment(),
-                        subTag+(i+1), i)));
+                        tabLabel, i)));
             }
         } else {
             // Display the fragment as the main content.
