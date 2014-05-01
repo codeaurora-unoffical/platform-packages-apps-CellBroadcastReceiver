@@ -269,4 +269,7 @@
       <item>15</item>
       <item>0</item>
     </string-array>
+
+    <string name="sub1">SUB 1</string>
+    <string name="sub2">SUB 2</string>
 </resources>
