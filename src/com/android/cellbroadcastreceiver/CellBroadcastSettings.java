@@ -90,9 +90,14 @@ public class CellBroadcastSettings extends PreferenceActivity {
     // Preference category for Brazil specific settings.
     public static final String KEY_CATEGORY_BRAZIL_SETTINGS = "category_brazil_settings";
 
+    // Preference category for India specific settings.
+    public static final String KEY_CATEGORY_INDIA_SETTINGS = "category_india_settings";
+
     // Preference key for whether to enable channel 50 notifications
     // Enabled by default for phones sold in Brazil, otherwise this setting may be hidden.
     public static final String KEY_ENABLE_CHANNEL_50_ALERTS = "enable_channel_50_alerts";
+
+    public static final String KEY_ENABLE_CHANNEL_60_ALERTS = "enable_channel_60_alerts";
 
     // Preference key for initial opt-in/opt-out dialog.
     public static final String KEY_SHOW_CMAS_OPT_OUT_DIALOG = "show_cmas_opt_out_dialog";
@@ -186,6 +191,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     (ListPreference) findPreference(KEY_ALERT_REMINDER_INTERVAL);
             final CheckBoxPreference enableChannel50Alerts =
                     (CheckBoxPreference) findPreference(KEY_ENABLE_CHANNEL_50_ALERTS);
+            final CheckBoxPreference enableChannel60Alerts =
+                    (CheckBoxPreference) findPreference(KEY_ENABLE_CHANNEL_60_ALERTS);
             final CheckBoxPreference enableEtwsAlerts =
                     (CheckBoxPreference) findPreference(KEY_ENABLE_ETWS_TEST_ALERTS);
             final CheckBoxPreference enableCmasExtremeAlerts =
@@ -219,6 +226,9 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     + sPhoneId, true));
             enableChannel50Alerts.setChecked(prefs.getBoolean(
                     KEY_ENABLE_CHANNEL_50_ALERTS + sPhoneId, true));
+            enableChannel60Alerts.setChecked(prefs.getBoolean(
+                    KEY_ENABLE_CHANNEL_60_ALERTS + sPhoneId,
+                    getResources().getBoolean(R.bool.def_channel_60_enabled)));
             enableEtwsAlerts.setChecked(prefs.getBoolean(
                     KEY_ENABLE_ETWS_TEST_ALERTS + sPhoneId, false));
             enableCmasExtremeAlerts.setChecked(prefs.getBoolean(
@@ -247,6 +257,9 @@ public class CellBroadcastSettings extends PreferenceActivity {
                                 + sPhoneId, Boolean.valueOf((value)));
                     } else if (pref == enableChannel50Alerts) {
                         editor.putBoolean(KEY_ENABLE_CHANNEL_50_ALERTS
+                                + sPhoneId, Boolean.valueOf((value)));
+                    } else if (pref == enableChannel60Alerts) {
+                        editor.putBoolean(KEY_ENABLE_CHANNEL_60_ALERTS
                                 + sPhoneId, Boolean.valueOf((value)));
                     } else if (pref == enableEtwsAlerts) {
                         editor.putBoolean(KEY_ENABLE_ETWS_TEST_ALERTS
@@ -346,15 +359,27 @@ public class CellBroadcastSettings extends PreferenceActivity {
             boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings) ||
                     "br".equals(tm.getSimCountryIso());
 
+            boolean enableChannel60Support = res.getBoolean(R.bool.show_india_settings)
+                    || "in".equals(tm.getSimCountryIso());
+
             if (!enableChannel50Support) {
                 preferenceScreen.removePreference(findPreference(KEY_CATEGORY_BRAZIL_SETTINGS));
             }
+
+            if (!enableChannel60Support) {
+                preferenceScreen.removePreference(findPreference(KEY_CATEGORY_INDIA_SETTINGS));
+            }
+
             if (!enableDevSettings) {
                 preferenceScreen.removePreference(findPreference(KEY_CATEGORY_DEV_SETTINGS));
             }
             if (enableChannel50Alerts != null) {
                 enableChannel50Alerts.setOnPreferenceChangeListener(startConfigServiceListener);
             }
+            if (enableChannel60Alerts != null) {
+                enableChannel60Alerts.setOnPreferenceChangeListener(startConfigServiceListener);
+            }
+
             if (enableEtwsAlerts != null) {
                 enableEtwsAlerts.setOnPreferenceChangeListener(startConfigServiceListener);
             }
