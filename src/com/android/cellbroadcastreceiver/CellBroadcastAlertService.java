@@ -117,7 +117,7 @@ public class CellBroadcastAlertService extends Service {
         public String toString() {
             return "{mServiceCategory: " + mServiceCategory + " serial number: " + mSerialNumber
                     + " location: " + mLocation.toString() + " mEtwsWarningInfo: "
-                    + mEtwsWarningInfo == null ? "NULL" : mEtwsWarningInfo.toString() + '}';
+                    + (mEtwsWarningInfo == null ? "NULL" : mEtwsWarningInfo.toString()) + '}';
         }
     }
 
