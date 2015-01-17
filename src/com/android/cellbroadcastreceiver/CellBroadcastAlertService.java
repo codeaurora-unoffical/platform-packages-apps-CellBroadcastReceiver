@@ -284,6 +284,16 @@ public class CellBroadcastAlertService extends Service {
             return false;   // area info broadcasts are displayed in Settings status screen
         }
 
+        if (message.getServiceCategory() == 60) {
+            if(getResources().getBoolean(R.bool.show_india_settings)) {
+                return PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
+                        CellBroadcastSettings.KEY_ENABLE_CHANNEL_60_ALERTS,
+                        getResources().getBoolean(R.bool.def_channel_60_enabled));
+            }else {
+                return true;
+            }
+        }
+
         return true;    // other broadcast messages are always enabled
     }
 
