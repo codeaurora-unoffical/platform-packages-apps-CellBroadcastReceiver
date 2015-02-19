@@ -317,6 +317,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     editor.commit();
                     return true;
                 }
+            };
 
             // Show extra settings when developer options is enabled in settings.
             boolean enableDevSettings = Settings.Global.getInt(getActivity().getContentResolver(),
@@ -364,7 +365,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
             TelephonyManager tm = (TelephonyManager) getActivity().getSystemService(
                     Context.TELEPHONY_SERVICE);
 
-            long[] subId = SubscriptionManager.getSubId(sPhoneId);
+            int[] subId = SubscriptionManager.getSubId(sPhoneId);
             String country = tm.getSimCountryIso(subId[0]);
             boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings)
                     || "br".equals(country) || res.getBoolean(R.bool.show_india_settings)
