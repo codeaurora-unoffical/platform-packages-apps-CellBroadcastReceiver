@@ -25,4 +25,6 @@
     <bool name="show_india_settings">false</bool>
     <!-- CellBroadcast channel 60 enabled or not,default value is true -->
     <bool name="def_channel_60_enabled">true</bool>
+    <!-- CellBroadcast channel 50 enabled or not,default value is true -->
+    <bool name="def_channel_50_enabled">true</bool>
 </resources>

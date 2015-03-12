@@ -1,6 +1,6 @@
 /*
+ * Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
  * Copyright (C) 2011 The Android Open Source Project
- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
  * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -39,6 +39,7 @@ import android.provider.Settings;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.content.Intent;
 
 /**
  * Settings activity for the cell broadcast receiver.
@@ -100,6 +101,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
 
     public static final String KEY_ENABLE_CHANNEL_60_ALERTS = "enable_channel_60_alerts";
 
+    // Customize the channel to enable
+    public static final String KEY_ENABLE_CHANNELS_ALERTS = "enable_channels_alerts";
+    public static final String KEY_DISABLE_CHANNELS_ALERTS = "disable_channels_alerts";
+
+
     // Preference key for initial opt-in/opt-out dialog.
     public static final String KEY_SHOW_CMAS_OPT_OUT_DIALOG = "show_cmas_opt_out_dialog";
 
@@ -117,7 +123,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sPhoneId = SubscriptionManager.getPhoneId(SubscriptionManager.getDefaultSmsSubId());
-        if (TelephonyManager.getDefault().getPhoneCount() > 1) {
+        if (TelephonyManager.getDefault().getPhoneCount() > 1
+                && !getResources().getBoolean(R.bool.def_custome_cell_broadcast_layout)) {
             final ActionBar actionBar = getActionBar();
             actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
             actionBar.setDisplayShowTitleEnabled(true);
@@ -128,8 +135,15 @@ public class CellBroadcastSettings extends PreferenceActivity {
             }
         } else {
             // Display the fragment as the main content.
-            getFragmentManager().beginTransaction().replace(android.R.id.content,
+            if (getResources().getBoolean(R.bool.def_custome_cell_broadcast_layout)) {
+                Intent intent = new Intent();
+                intent.setClass(this, CustomCellBroadcastSettingsActivity.class);
+                startActivity(intent);
+                this.finish();
+            } else {
+               getFragmentManager().beginTransaction().replace(android.R.id.content,
                     new CellBroadcastSettingsFragment()).commit();
+            }
         }
     }
 
@@ -226,7 +240,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
             enablePwsAlerts.setChecked(prefs.getBoolean( KEY_ENABLE_EMERGENCY_ALERTS
                     + sPhoneId, true));
             enableChannel50Alerts.setChecked(prefs.getBoolean(
-                    KEY_ENABLE_CHANNEL_50_ALERTS + sPhoneId, true));
+                    KEY_ENABLE_CHANNEL_50_ALERTS + sPhoneId,
+                    getResources().getBoolean(R.bool.def_channel_50_enabled)));
             enableChannel60Alerts.setChecked(prefs.getBoolean(
                     KEY_ENABLE_CHANNEL_60_ALERTS + sPhoneId,
                     getResources().getBoolean(R.bool.def_channel_60_enabled)));
