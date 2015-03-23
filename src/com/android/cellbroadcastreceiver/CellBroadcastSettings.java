@@ -27,6 +27,7 @@ import android.content.res.Resources;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.os.UserManager;
+import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
@@ -265,6 +266,14 @@ public class CellBroadcastSettings extends PreferenceActivity {
                         editor.putBoolean(KEY_ENABLE_ETWS_TEST_ALERTS
                                 + sPhoneId, Boolean.valueOf((value)));
                     } else if (pref == enableCmasExtremeAlerts) {
+                        boolean isExtremeAlertChecked =
+                                ((Boolean) newValue).booleanValue();
+                        if (enableCmasSevereAlerts != null) {
+                            enableCmasSevereAlerts.setEnabled(isExtremeAlertChecked);
+                            enableCmasSevereAlerts.setChecked(false);
+                            editor.putBoolean(KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS
+                                    + sPhoneId, Boolean.valueOf((value)));
+                        }
                         editor.putBoolean(KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS
                                 + sPhoneId, Boolean.valueOf((value)));
                     } else if (pref == enableCmasSevereAlerts) {
@@ -356,7 +365,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
             TelephonyManager tm = (TelephonyManager) getActivity().getSystemService(
                     Context.TELEPHONY_SERVICE);
 
-            long[] subId = SubscriptionManager.getSubId(sPhoneId);
+            int[] subId = SubscriptionManager.getSubId(sPhoneId);
             String country = tm.getSimCountryIso(subId[0]);
             boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings)
                     || "br".equals(country) || res.getBoolean(R.bool.show_india_settings)
@@ -391,6 +400,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
             }
             if (enableCmasSevereAlerts != null) {
                 enableCmasSevereAlerts.setOnPreferenceChangeListener(startConfigServiceListener);
+                if (enableCmasExtremeAlerts != null) {
+                    boolean isExtremeAlertChecked =
+                            ((CheckBoxPreference)enableCmasExtremeAlerts).isChecked();
+                    enableCmasSevereAlerts.setEnabled(isExtremeAlertChecked);
+                }
             }
             if (enableCmasAmberAlerts != null) {
                 enableCmasAmberAlerts.setOnPreferenceChangeListener(startConfigServiceListener);
