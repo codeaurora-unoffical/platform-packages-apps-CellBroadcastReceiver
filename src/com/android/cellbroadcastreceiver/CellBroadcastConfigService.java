@@ -167,9 +167,16 @@ public class CellBroadcastConfigService extends IntentService {
                 boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings) ||
                         "br".equals(tm.getSimCountryIso());
 
+                boolean enableChannel60Support = res.getBoolean(R.bool.show_india_settings)
+                        || "in".equals(tm.getSimCountryIso());
+
                 boolean enableChannel50Alerts = enableChannel50Support &&
                         prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_50_ALERTS
                         + phoneId, true);
+
+                boolean enableChannel60Alerts = enableChannel60Support &&
+                        prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_60_ALERTS
+                        + phoneId, getResources().getBoolean(R.bool.def_channel_60_enabled));
 
                 // Note:  ETWS is for 3GPP only
                 boolean enableEtwsTestAlerts = prefs.getBoolean(
@@ -329,6 +336,19 @@ public class CellBroadcastConfigService extends IntentService {
                 } else {
                     if (DBG) log("disabling cell broadcast channel 50");
                     manager.disableCellBroadcast(50, SmsManager.CELL_BROADCAST_RAN_TYPE_GSM);
+                }
+
+                // Enable Channel 60 for India
+                if (isCdma) {
+                    if (DBG) log("channel 60 is not applicable for cdma");
+                } else if (enableChannel60Alerts) {
+                    if (DBG) log("enabling cell broadcast channel 60");
+                    manager.enableCellBroadcast(60);
+                    if (DBG) log("enabled cell broadcast channel 60");
+                } else {
+                    if (DBG) log("disabling cell broadcast channel 60");
+                    manager.disableCellBroadcast(60);
+                    if (DBG) log("disabled cell broadcast channel 60");
                 }
 
                 if ("il".equals(tm.getSimCountryIso()) || "il".equals(tm.getNetworkCountryIso())) {
