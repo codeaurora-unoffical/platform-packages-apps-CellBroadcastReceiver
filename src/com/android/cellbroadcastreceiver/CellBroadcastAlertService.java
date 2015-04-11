@@ -38,6 +38,7 @@ import android.telephony.SmsCbEtwsInfo;
 import android.telephony.SmsCbLocation;
 import android.telephony.SmsCbMessage;
 import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.android.internal.telephony.PhoneConstants;
@@ -319,7 +320,20 @@ public class CellBroadcastAlertService extends Service {
             intent.putExtra("message", message);
             sendBroadcastAsUser(intent, UserHandle.ALL,
                     android.Manifest.permission.READ_PHONE_STATE);
-            return false;   // area info broadcasts are displayed in Settings status screen
+
+            boolean isMSim = TelephonyManager.getDefault().isMultiSimEnabled();
+            String country = "";
+            if (isMSim) {
+                country = TelephonyManager.getDefault().getSimCountryIso(message.getSubId());
+            } else {
+                country = TelephonyManager.getDefault().getSimCountryIso();
+            }
+            // In Brazil(50)/India(50/60) the area info broadcasts are displayed in Settings,
+            // CBwidget or Mms.
+            // But in other country it should be displayed as a normal CB alert.
+            boolean needIgnore = "in".equals(country)
+                    || ("br".equals(country) && (message.getServiceCategory() == CB_CHANNEL_50));
+            return !needIgnore;
         }
 
         if (message.getServiceCategory() == 60) {
