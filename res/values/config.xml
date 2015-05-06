@@ -25,4 +25,5 @@
     <bool name="show_india_settings">false</bool>
     <!-- CellBroadcast channel 60 enabled or not,default value is true -->
     <bool name="def_channel_60_enabled">true</bool>
+    <bool name="config_regional_wea_duplicated_check_deleted_records">false</bool>
 </resources>
