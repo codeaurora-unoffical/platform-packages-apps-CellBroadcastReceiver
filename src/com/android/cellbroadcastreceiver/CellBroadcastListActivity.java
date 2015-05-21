@@ -52,7 +52,7 @@ import java.util.ArrayList;
  * in the inner CursorLoaderListFragment class.
  */
 public class CellBroadcastListActivity extends Activity {
-
+    public static boolean mDuplicateCheckDeletedRecords = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,6 +62,8 @@ public class CellBroadcastListActivity extends Activity {
                 .cancel(CellBroadcastAlertService.NOTIFICATION_ID);
 
         FragmentManager fm = getFragmentManager();
+        mDuplicateCheckDeletedRecords = getResources().getBoolean(com.android.internal.R
+                .bool.config_regional_wea_duplicated_check_deleted_records);
 
         // Create the list fragment and add it as our sole content.
         if (fm.findFragmentById(android.R.id.content) == null) {
@@ -141,6 +143,12 @@ public class CellBroadcastListActivity extends Activity {
 
         @Override
         public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+            if(mDuplicateCheckDeletedRecords) {
+               return new CursorLoader(getActivity(), CellBroadcastContentProvider.CONTENT_URI,
+                   Telephony.CellBroadcasts.QUERY_COLUMNS,
+                   Telephony.CellBroadcasts.MESSAGE_DELETED + "=0", null,
+                   Telephony.CellBroadcasts.DELIVERY_TIME + " DESC");
+            }
             return new CursorLoader(getActivity(), CellBroadcastContentProvider.CONTENT_URI,
                     Telephony.CellBroadcasts.QUERY_COLUMNS, null, null,
                     Telephony.CellBroadcasts.DELIVERY_TIME + " DESC");
@@ -276,8 +284,14 @@ public class CellBroadcastListActivity extends Activity {
                             @Override
                             public boolean execute(CellBroadcastContentProvider provider) {
                                 if (mRowId != -1) {
+                                    if(mDuplicateCheckDeletedRecords) {
+                                       return CellBroadcastAlertServiceIDList.markItemDeleted(mRowId, provider);
+                                    }
                                     return provider.deleteBroadcast(mRowId);
                                 } else {
+                                    if(mDuplicateCheckDeletedRecords) {
+                                        return CellBroadcastAlertServiceIDList.markAllItemsDeleted(provider);
+                                    }
                                     return provider.deleteAllBroadcasts();
                                 }
                             }

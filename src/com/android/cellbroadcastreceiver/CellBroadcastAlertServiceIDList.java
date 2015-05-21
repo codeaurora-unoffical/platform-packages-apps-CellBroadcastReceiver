@@ -39,6 +39,8 @@ import android.telephony.SmsCbMessage;
 import android.content.Context;
 import android.telephony.CellBroadcastMessage;
 import java.util.Iterator;
+import android.database.sqlite.SQLiteDatabase;
+import android.content.ContentValues;
 
 public class CellBroadcastAlertServiceIDList{
     private static final String TAG = "CellBroadcastAlertServiceUtil";
@@ -157,11 +159,51 @@ public class CellBroadcastAlertServiceIDList{
         }
     }
 
-     private static long getLongColumn (int column, Cursor cursor) {
+    private static long getLongColumn (int column, Cursor cursor) {
         if (column != -1 && !cursor.isNull(column)) {
             return cursor.getLong(column);
         } else {
             return -1;
         }
+    }
+
+    public static boolean markItemDeleted(long rowId, CellBroadcastContentProvider provider) {
+        deleteAllMarked(provider);
+        SQLiteDatabase db = provider.getOpenHelper().getWritableDatabase();
+        ContentValues value = new ContentValues(1);
+        value.put(Telephony.CellBroadcasts.MESSAGE_DELETED, 1);
+        int rowCount = db.update(CellBroadcastDatabaseHelper.TABLE_NAME, value,
+                Telephony.CellBroadcasts._ID + "=?",
+                new String[]{Long.toString(rowId)});
+        if (rowCount != 0) {
+            return true;
+        } else {
+            Log.e(TAG, "failed to delete broadcast at row " + rowId);
+            return false;
+        }
+    }
+
+    public static boolean markAllItemsDeleted(CellBroadcastContentProvider provider) {
+        deleteAllMarked(provider);
+        SQLiteDatabase db = provider.getOpenHelper().getWritableDatabase();
+        ContentValues value = new ContentValues(1);
+        value.put(Telephony.CellBroadcasts.MESSAGE_DELETED, 1);
+        int rowCount = db.update(CellBroadcastDatabaseHelper.TABLE_NAME, value,
+                Telephony.CellBroadcasts.MESSAGE_DELETED + "=0", null);
+        if (rowCount != 0) {
+            return true;
+        } else {
+            Log.e(TAG, "failed to delete all broadcasts");
+            return false;
+        }
+    }
+
+    private static void deleteAllMarked(CellBroadcastContentProvider provider) {
+        SQLiteDatabase db = provider.getOpenHelper().getWritableDatabase();
+        String strWhere = Telephony.CellBroadcasts.MESSAGE_DELETED +
+                "=1 AND "+Telephony.CellBroadcasts.DELIVERY_TIME + "<?";
+        long time = System.currentTimeMillis();
+        String strExpired = Long.toString(time - TIME12HOURS);
+        db.delete(CellBroadcastDatabaseHelper.TABLE_NAME, strWhere,new String[]{strExpired});
     }
 }
