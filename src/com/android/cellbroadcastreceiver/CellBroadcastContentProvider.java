@@ -66,7 +66,7 @@ public class CellBroadcastContentProvider extends ContentProvider {
 
     /** The database for this content provider. */
     private SQLiteOpenHelper mOpenHelper;
-
+    private static final long TIME12HOURS = 12*60*60*1000;
     /**
      * Initialize content provider.
      * @return true if the provider was successfully loaded, false otherwise
@@ -240,6 +240,46 @@ public class CellBroadcastContentProvider extends ContentProvider {
             Log.e(TAG, "failed to delete all broadcasts");
             return false;
         }
+    }
+
+    boolean markItemDeleted(long rowId) {
+        deleteAllMarked();
+        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        ContentValues value = new ContentValues(1);
+        value.put(Telephony.CellBroadcasts.MESSAGE_DELETED, 1);
+        int rowCount = db.update(CellBroadcastDatabaseHelper.TABLE_NAME, value,
+                Telephony.CellBroadcasts._ID + "=?",
+                new String[]{Long.toString(rowId)});
+        if (rowCount != 0) {
+            return true;
+        } else {
+            Log.e(TAG, "failed to delete broadcast at row " + rowId);
+            return false;
+        }
+    }
+
+    boolean markAllItemsDeleted() {
+        deleteAllMarked();
+        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        ContentValues value = new ContentValues(1);
+        value.put(Telephony.CellBroadcasts.MESSAGE_DELETED, 1);
+        int rowCount = db.update(CellBroadcastDatabaseHelper.TABLE_NAME, value,
+                Telephony.CellBroadcasts.MESSAGE_DELETED + "=0", null);
+        if (rowCount != 0) {
+            return true;
+        } else {
+            Log.e(TAG, "failed to delete all broadcasts");
+            return false;
+        }
+    }
+
+    void deleteAllMarked() {
+        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        String strWhere = Telephony.CellBroadcasts.MESSAGE_DELETED +
+                "=1 AND "+Telephony.CellBroadcasts.DELIVERY_TIME + "<?";
+        long time = System.currentTimeMillis();
+        String strExpired = Long.toString(time - TIME12HOURS);
+        db.delete(CellBroadcastDatabaseHelper.TABLE_NAME, strWhere,new String[]{strExpired});
     }
 
     /**
