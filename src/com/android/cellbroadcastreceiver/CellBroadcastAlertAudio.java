@@ -24,6 +24,7 @@ import android.content.res.AssetFileDescriptor;
 import android.content.res.Resources;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
@@ -326,6 +327,12 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
                 }
             });
 
+            mMediaPlayer.setOnCompletionListener(new OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    mMediaPlayer.start();
+                }
+            });
             try {
                 // Check if we are in a call. If we are, play the alert
                 // sound at a low volume to not disrupt the call.
@@ -355,7 +362,6 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
     private static void startAlarm(MediaPlayer player)
             throws java.io.IOException, IllegalArgumentException, IllegalStateException {
         player.setAudioStreamType(AudioManager.STREAM_NOTIFICATION);
-        player.setLooping(true);
         player.prepare();
         player.start();
     }
