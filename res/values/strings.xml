@@ -134,6 +134,8 @@
     <string name="enable_alert_vibrate_title">Vibrate</string>
     <!-- Preference summary for CMAS vibration on/off. [CHAR LIMIT=60] -->
     <string name="enable_alert_vibrate_summary">Vibrate on alert</string>
+    <string name="enable_alert_tone_title">Alert tone</string>
+    <string name="enable_alert_tone_summary">Alert tone on</string>
 
     <!-- Preference category title for Brazil settings. [CHAR LIMIT=50] -->
     <string name="category_brazil_settings_title">Settings for Brazil</string>

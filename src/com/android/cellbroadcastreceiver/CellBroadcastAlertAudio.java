@@ -69,6 +69,9 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
     public static final String ALERT_AUDIO_VIBRATE_EXTRA =
             "com.android.cellbroadcastreceiver.ALERT_AUDIO_VIBRATE";
 
+    public static final String ALERT_AUDIO_TONE_EXTRA =
+            "com.android.cellbroadcastreceiver.ALERT_AUDIO_TONE";
+
     /** Extra for alert audio ETWS behavior (always vibrate, even in silent mode). */
     public static final String ALERT_AUDIO_ETWS_VIBRATE_EXTRA =
             "com.android.cellbroadcastreceiver.ALERT_AUDIO_ETWS_VIBRATE";
@@ -251,6 +254,10 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
         mMessageBody = intent.getStringExtra(ALERT_AUDIO_MESSAGE_BODY);
         mMessageLanguage = intent.getStringExtra(ALERT_AUDIO_MESSAGE_LANGUAGE);
 
+        if (getResources().getBoolean(
+                com.android.internal.R.bool.config_regional_wea_alert_tone_enable)) {
+            mEnableAudio = intent.getBooleanExtra(ALERT_AUDIO_TONE_EXTRA, false);
+        }
         mEnableVibrate = intent.getBooleanExtra(ALERT_AUDIO_VIBRATE_EXTRA, true);
         if (intent.getBooleanExtra(ALERT_AUDIO_ETWS_VIBRATE_EXTRA, false)) {
             mEnableVibrate = true;  // force enable vibration for ETWS alerts
@@ -270,7 +277,10 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
             case AudioManager.RINGER_MODE_NORMAL:
             default:
                 if (DBG) log("Ringer mode: normal");
-                mEnableAudio = true;
+                if (!(getResources().getBoolean(
+                        com.android.internal.R.bool.config_regional_wea_alert_tone_enable))) {
+                    mEnableAudio = true;
+                }
                 break;
         }
 
