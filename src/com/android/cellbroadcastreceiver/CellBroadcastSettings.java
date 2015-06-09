@@ -60,6 +60,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
     // Enable vibration on alert (unless master volume is silent).
     public static final String KEY_ENABLE_ALERT_VIBRATE = "enable_alert_vibrate";
 
+    public static final String KEY_ENABLE_ALERT_TONE = "enable_alert_tone";
+
     // Speak contents of alert after playing the alert sound.
     public static final String KEY_ENABLE_ALERT_SPEECH = "enable_alert_speech";
 
@@ -118,6 +120,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
     public static String subTag = "SUB";
 
     public static int sPhoneId;
+    private static CheckBoxPreference mEnableAlertsTone;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -222,6 +225,13 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     (CheckBoxPreference) findPreference(KEY_ENABLE_ALERT_SPEECH);
             final CheckBoxPreference enableVibrateAlerts =
                     (CheckBoxPreference) findPreference(KEY_ENABLE_ALERT_VIBRATE);
+            if (getResources().getBoolean(
+                    com.android.internal.R.bool.config_regional_wea_alert_tone_enable)) {
+                mEnableAlertsTone =
+                        (CheckBoxPreference) findPreference(KEY_ENABLE_ALERT_TONE);
+            } else {
+                preferenceScreen.removePreference(findPreference(KEY_ENABLE_ALERT_TONE));
+            }
 
             final int idx = interval.findIndexOfValue(
                     (String)prefs.getString(KEY_ALERT_REMINDER_INTERVAL + sPhoneId,
@@ -259,6 +269,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     KEY_ENABLE_ALERT_SPEECH + sPhoneId, true));
             enableVibrateAlerts.setChecked(prefs.getBoolean(
                     KEY_ENABLE_ALERT_VIBRATE + sPhoneId, true));
+            if (getResources().getBoolean(
+                    com.android.internal.R.bool.config_regional_wea_alert_tone_enable)) {
+                mEnableAlertsTone.setChecked(prefs.getBoolean(
+                        KEY_ENABLE_ALERT_TONE + sPhoneId, true));
+            }
 
             // Handler for settings that require us to reconfigure enabled channels in radio
             Preference.OnPreferenceChangeListener startConfigServiceListener =
@@ -321,6 +336,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
                                 + sPhoneId, Boolean.valueOf((value)));
                     } else if (pref == enableVibrateAlerts) {
                         editor.putBoolean(KEY_ENABLE_ALERT_VIBRATE
+                                + sPhoneId, Boolean.valueOf((value)));
+                    } else if (getResources().getBoolean(
+                            com.android.internal.R.bool.config_regional_wea_alert_tone_enable)
+                            && pref == mEnableAlertsTone) {
+                        editor.putBoolean(KEY_ENABLE_ALERT_TONE
                                 + sPhoneId, Boolean.valueOf((value)));
                     } else if (pref == interval) {
                         final int idx = interval.findIndexOfValue((String) newValue);
@@ -433,6 +453,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
             }
             if (enableVibrateAlerts != null) {
                 enableVibrateAlerts.setOnPreferenceChangeListener(startListener);
+            }
+            if (getResources().getBoolean(
+                    com.android.internal.R.bool.config_regional_wea_alert_tone_enable)
+                    && mEnableAlertsTone != null) {
+                mEnableAlertsTone.setOnPreferenceChangeListener(startListener);
             }
             if (interval != null) {
                 interval.setOnPreferenceChangeListener(startListener);
