@@ -530,6 +530,11 @@ public class CellBroadcastAlertService extends Service {
                     prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_VIBRATE, true));
         }
 
+        if (getResources().getBoolean(
+                com.android.internal.R.bool.config_regional_wea_alert_tone_enable)) {
+            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_TONE_EXTRA,
+                    prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_TONE, true));
+        }
         String messageBody = message.getMessageBody();
 
         if (prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_SPEECH, true)) {
