@@ -299,6 +299,13 @@ public class CellBroadcastAlertFullScreen extends Activity {
             mScreenOffHandler.startScreenOnTimer();
         }
 
+        if (getIntent().getBooleanExtra(SCREEN_OFF_EXTRA, false)) {
+            int titleId = CellBroadcastResources.getDialogTitleResource(message);
+            setTitle(titleId);
+            ((TextView) findViewById(R.id.alertTitle)).setText(titleId);
+            ((TextView) findViewById(R.id.message)).setText(message.getMessageBody());
+            return;
+        }
         updateAlertText(message);
     }
 
