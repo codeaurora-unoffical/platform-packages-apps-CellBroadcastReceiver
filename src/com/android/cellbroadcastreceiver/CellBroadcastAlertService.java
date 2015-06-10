@@ -25,7 +25,6 @@ import android.app.ActivityManagerNative;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -46,7 +45,6 @@ import com.android.internal.telephony.PhoneConstants;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 
 /**
  * This service manages the display and animation of broadcast messages.
@@ -77,28 +75,13 @@ public class CellBroadcastAlertService extends Service {
 
     /** Channel 60 Cell Broadcast. */
     static final int CB_CHANNEL_60 = 60;
-    private static Context mContext = null;
-    private boolean mDuplicateCheckDatabase = false;
-
-    @Override
-    public void onCreate() {
-        mContext = this;
-        super.onCreate();
-        mDuplicateCheckDatabase = mContext.getResources().getBoolean(com.android.internal.R
-                .bool.config_regional_wea_duplicated_check_database);
-        if (mDuplicateCheckDatabase) {
-            CellBroadcastAlertServiceIDList.initHalfDayCmasList(mContext);
-        }
-    }
 
     /** Container for message ID and geographical scope, for duplicate message detection. */
-    public static final class MessageServiceCategoryAndScope {
+    private static final class MessageServiceCategoryAndScope {
         private final int mServiceCategory;
         private final int mSerialNumber;
         private final SmsCbLocation mLocation;
         private final SmsCbEtwsInfo mEtwsWarningInfo;
-        public final long mDeliveryTime;
-        private final String mMessageBody;
 
         MessageServiceCategoryAndScope(int serviceCategory, int serialNumber,
                 SmsCbLocation location, SmsCbEtwsInfo etwsWarningInfo) {
@@ -106,18 +89,6 @@ public class CellBroadcastAlertService extends Service {
             mSerialNumber = serialNumber;
             mLocation = location;
             mEtwsWarningInfo = etwsWarningInfo;
-            mMessageBody = null;
-            mDeliveryTime = 0;
-        }
-
-        MessageServiceCategoryAndScope(int serviceCategory, int serialNumber,
-                SmsCbLocation location, String messageBody, long deliveryTime) {
-            mServiceCategory = serviceCategory;
-            mSerialNumber = serialNumber;
-            mLocation = location;
-            mMessageBody = messageBody;
-            mDeliveryTime = deliveryTime;
-            mEtwsWarningInfo = null;
         }
 
         @Override
@@ -221,11 +192,8 @@ public class CellBroadcastAlertService extends Service {
                     " by user preference");
             return;
         }
-        if (mDuplicateCheckDatabase) {
-            if (CellBroadcastAlertServiceIDList.isDuplicated(message)) {
-                return;
-            }
-        } else if (mUseDupDetection) {
+
+        if (mUseDupDetection) {
             // Check for duplicate message IDs according to CMAS carrier requirements. Message IDs
             // are stored in volatile memory. If the maximum of 65535 messages is reached, the
             // message ID of the oldest message is deleted from the list.
