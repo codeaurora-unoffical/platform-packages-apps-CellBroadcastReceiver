@@ -102,10 +102,6 @@ public class CellBroadcastContentProvider extends ContentProvider {
         return true;
     }
 
-    public SQLiteOpenHelper getOpenHelper() {
-        return mOpenHelper;
-    }
-
     /**
      * Return a cursor for the cell broadcast table.
      * @param uri the URI to query.

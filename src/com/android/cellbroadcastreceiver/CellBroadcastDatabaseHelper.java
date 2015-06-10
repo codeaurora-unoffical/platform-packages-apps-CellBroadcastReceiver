@@ -53,13 +53,9 @@ public class CellBroadcastDatabaseHelper extends SQLiteOpenHelper {
      * Database version 11: adds delivery time index
      */
     static final int DATABASE_VERSION = 11;
-    private boolean mDuplicateCheckDeletedRecords = false;
 
     CellBroadcastDatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
-        mDuplicateCheckDeletedRecords =
-            context.getResources().getBoolean(com.android.internal.R.bool
-            .config_regional_wea_duplicated_check_deleted_records);
     }
 
     @Override
@@ -85,12 +81,6 @@ public class CellBroadcastDatabaseHelper extends SQLiteOpenHelper {
                 + Telephony.CellBroadcasts.CMAS_SEVERITY + " INTEGER,"
                 + Telephony.CellBroadcasts.CMAS_URGENCY + " INTEGER,"
                 + Telephony.CellBroadcasts.CMAS_CERTAINTY + " INTEGER);");
-                if(mDuplicateCheckDeletedRecords) {
-                    db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN "
-                        + Telephony.CellBroadcasts.MESSAGE_DELETED
-                        + " INTEGER NOT NULL DEFAULT 0;");
-                }
-
         db.execSQL("CREATE TABLE " + CHANNEL_TABLE + " ("
                    + "_id"+" INTEGER PRIMARY KEY AUTOINCREMENT,"
                    + "name"+" TEXT,"
@@ -175,11 +165,6 @@ public class CellBroadcastDatabaseHelper extends SQLiteOpenHelper {
 
         if (oldVersion == 10) {
             createDeliveryTimeIndex(db);
-            if(mDuplicateCheckDeletedRecords) {
-                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN "
-                         + Telephony.CellBroadcasts.MESSAGE_DELETED
-                         + " INTEGER NOT NULL DEFAULT 0;");
-            }
             oldVersion++;
         }
     }
