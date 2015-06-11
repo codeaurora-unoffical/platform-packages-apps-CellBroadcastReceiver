@@ -22,6 +22,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -48,6 +49,8 @@ public class CellBroadcastAlertReminder extends Service {
      * service in order to cancel any pending reminders when user dismisses the alert dialog.
      */
     private static PendingIntent sPlayReminderIntent;
+    private static Context mcontext;
+    private static AudioManager mAudioManager;
 
     /**
      * Alert reminder for current ringtone being played.
@@ -109,7 +112,7 @@ public class CellBroadcastAlertReminder extends Service {
         // Stop any alert reminder sound and cancel any previously queued reminders.
         cancelAlertReminder();
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         String prefStr = prefs.getString(CellBroadcastSettings.KEY_ALERT_REMINDER_INTERVAL +
                 phoneId, null);
 
@@ -126,11 +129,41 @@ public class CellBroadcastAlertReminder extends Service {
             return false;
         }
 
-        if (interval == 0 || (interval == 1 && !firstTime)) {
-            return false;
-        }
-        if (interval == 1) {
-            interval = 2;   // "1" = one reminder after 2 minutes
+        mAudioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+        if (context.getResources().getBoolean(
+                com.android.internal.R.bool.config_regional_wea_alert_reminder_interval)
+                && (mAudioManager.getRingerMode() != AudioManager.RINGER_MODE_SILENT)
+                && prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_VIBRATE
+                        + phoneId, true)) {
+            mcontext = context;
+            SharedPreferences.Editor editor = prefs.edit();
+            // if it the first time.
+            prefStr = prefs.getString("next_time_reminder", null);
+            if (firstTime) {
+                interval = 1;
+                editor.putString("next_time_reminder", "3");
+            } else {
+                prefStr = prefs.getString("next_time_reminder", null);
+                try {
+                    interval = Integer.valueOf(prefStr);
+                } catch (NumberFormatException ignored) {
+                    loge("invalid alert reminder interval preference: " + prefStr);
+                    return false;
+                }
+                if (interval > 5) {
+                    return false;
+               } else {
+                   editor.putString("next_time_reminder", interval + 2 + "");
+               }
+           }
+           editor.commit();
+        } else {
+            if (interval == 0 || (interval == 1 && !firstTime)) {
+                return false;
+            }
+            if (interval == 1) {
+                interval = 2;   // "1" = one reminder after 2 minutes
+            }
         }
 
         if (DBG) log("queueAlertReminder() in " + interval + " minutes");
