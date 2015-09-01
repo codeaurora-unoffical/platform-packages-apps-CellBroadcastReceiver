@@ -33,6 +33,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Vibrator;
+import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
@@ -76,6 +77,9 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
     public static final String ALERT_AUDIO_ETWS_VIBRATE_EXTRA =
             "com.android.cellbroadcastreceiver.ALERT_AUDIO_ETWS_VIBRATE";
 
+    public static final String ALERT_AUDIO_PRESIDENT_TONE_VIBRATE_EXTRA =
+            "com.android.cellbroadcastreceiver.ALERT_AUDIO_PRESIDENT_TONE_VIBRATE";
+
     /** Pause duration between alert sound and alert speech. */
     private static final int PAUSE_DURATION_BEFORE_SPEAKING_MSEC = 1000;
 
@@ -104,6 +108,9 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
     private AudioManager mAudioManager;
     private TelephonyManager mTelephonyManager;
     private int mInitialCallState;
+    private boolean mAudioManagerIsChanged;
+    private int mOldRingerMode;
+    private int mOldStreamVolume;
 
     private PendingIntent mPlayReminderIntent;
 
@@ -259,7 +266,9 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
             mEnableAudio = intent.getBooleanExtra(ALERT_AUDIO_TONE_EXTRA, false);
         }
         mEnableVibrate = intent.getBooleanExtra(ALERT_AUDIO_VIBRATE_EXTRA, true);
-        if (intent.getBooleanExtra(ALERT_AUDIO_ETWS_VIBRATE_EXTRA, false)) {
+        if (!getResources().getBoolean(
+                com.android.internal.R.bool.config_regional_presidential_wea_with_tone_vibrate)
+                && intent.getBooleanExtra(ALERT_AUDIO_ETWS_VIBRATE_EXTRA, false)) {
             mEnableVibrate = true;  // force enable vibration for ETWS alerts
         }
 
@@ -267,6 +276,10 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
             case AudioManager.RINGER_MODE_SILENT:
                 if (DBG) log("Ringer mode: silent");
                 mEnableAudio = false;
+                if (Settings.System.getInt(getContentResolver(),
+                        Settings.System.VIBRATE_WHEN_RINGING, 0) == 0 && mEnableVibrate == true) {
+                    mEnableVibrate = false;
+                }
                 break;
 
             case AudioManager.RINGER_MODE_VIBRATE:
@@ -281,7 +294,19 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
                         com.android.internal.R.bool.config_regional_wea_alert_tone_enable))) {
                     mEnableAudio = true;
                 }
+                if (Settings.System.getInt(getContentResolver(),
+                        Settings.System.VIBRATE_WHEN_RINGING, 0) == 0 && mEnableVibrate == true) {
+                    mEnableVibrate = false;
+                }
                 break;
+        }
+
+        if (getResources().getBoolean(
+                com.android.internal.R.bool.config_regional_presidential_wea_with_tone_vibrate)
+                && intent.getBooleanExtra(ALERT_AUDIO_PRESIDENT_TONE_VIBRATE_EXTRA, false)) {
+            mEnableVibrate = true;
+            mEnableAudio = true;
+            changeAudioManagerForWeaPresidential(); //change ringer mode & volume for President WEA
         }
 
         if (mMessageBody != null && mEnableAudio) {
@@ -304,6 +329,53 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
         mInitialCallState = mTelephonyManager.getCallState();
 
         return START_STICKY;
+    }
+
+    /**
+     * Force RingMode to normal and stream volume to max for presidential WEA
+     * messages.
+     * mOldRingerMode and mOldStreamVolume will be updated to record orginal settings.
+     */
+    private void changeAudioManagerForWeaPresidential() {
+        mAudioManagerIsChanged = false;
+
+        //save original RingerMode and force it to normal
+        mOldRingerMode = mAudioManager.getRingerMode();
+        if(mOldRingerMode != AudioManager.RINGER_MODE_NORMAL) {
+            mAudioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+            mAudioManagerIsChanged = true;
+        }
+
+        //save original Stream Volume and force it to max (5)
+        mOldStreamVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
+        if(mAudioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION) != 5) {
+            mAudioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, 5, 0);
+            mAudioManagerIsChanged = true;
+        }
+    }
+
+    /**
+     * Restore RingMode and stream volume to original settings after presidential WEA
+     * messages.
+     */
+    private void restoreAudioManagerIfChanged() {
+        if (!mAudioManagerIsChanged) {
+            if (DBG) log("AudioManager no change");
+            return;
+        }
+
+        if (mAudioManager.getRingerMode() != mOldRingerMode) {
+            mAudioManager.setRingerMode(mOldRingerMode);
+            if (DBG) log("AudioManager restore RingerMode to " + mOldRingerMode);
+        }
+
+        if (mAudioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION) !=
+            mOldStreamVolume) {
+            mAudioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, mOldStreamVolume, 0);
+            if (DBG) log("AudioManager restore stream volume to " + mOldStreamVolume);
+        }
+
+        mAudioManagerIsChanged = false;
     }
 
     // Volume suggested by media team for in-call alarms.
@@ -431,6 +503,10 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
 
             // Stop vibrator
             mVibrator.cancel();
+            if (getResources().getBoolean(
+                    com.android.internal.R.bool.config_regional_presidential_wea_with_tone_vibrate)) {
+                restoreAudioManagerIfChanged(); //restore user setting after presidental WEA
+            }
         } else if (mState == STATE_SPEAKING && mTts != null) {
             try {
                 mTts.stop();

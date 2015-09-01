@@ -31,6 +31,7 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.telephony.CellBroadcastMessage;
+import android.telephony.SmsCbCmasInfo;
 import android.telephony.SubscriptionManager;
 import android.util.Log;
 
@@ -116,10 +117,21 @@ public class CellBroadcastAlertReminder extends Service {
         }
         audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_DURATION_EXTRA, duration);
 
-        if (message.isEtwsMessage()) {
+        if (!getResources().getBoolean(
+                com.android.internal.R.bool.config_regional_presidential_wea_with_tone_vibrate)
+                && message.isEtwsMessage()) {
             // For ETWS, always vibrate, even in silent mode.
             audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_VIBRATE_EXTRA, true);
             audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_ETWS_VIBRATE_EXTRA, true);
+        } else if ((getResources().getBoolean(
+                com.android.internal.R.bool.config_regional_presidential_wea_with_tone_vibrate))
+                && (message.isCmasMessage())
+                && (message.getCmasMessageClass()
+                == SmsCbCmasInfo.CMAS_CLASS_PRESIDENTIAL_LEVEL_ALERT)){
+            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_VIBRATE_EXTRA, true);
+            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_TONE_EXTRA, true);
+            audioIntent.putExtra(
+                    CellBroadcastAlertAudio.ALERT_AUDIO_PRESIDENT_TONE_VIBRATE_EXTRA, true);
         } else {
             // For other alerts, vibration can be disabled in app settings.
             audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_VIBRATE_EXTRA,
