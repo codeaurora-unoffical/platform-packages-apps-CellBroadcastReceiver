@@ -28,6 +28,7 @@ import android.preference.PreferenceManager;
 import android.provider.Telephony;
 import android.telephony.CellBroadcastMessage;
 import android.telephony.ServiceState;
+import android.telephony.SubInfoRecord;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaSmsCbProgramData;
@@ -41,7 +42,7 @@ import com.android.internal.telephony.TelephonyIntents;
 public class CellBroadcastReceiver extends BroadcastReceiver {
     private static final String TAG = "CellBroadcastReceiver";
     static final boolean DBG = true;    // STOPSHIP: change to false before ship
-    private int mServiceState = -1;
+    private int[] mServiceState = null;
     private static final String GET_LATEST_CB_AREA_INFO_ACTION =
             "android.cellbroadcastreceiver.GET_LATEST_CB_AREA_INFO";
 
@@ -73,13 +74,29 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
             if (DBG) log("Intent ACTION_SERVICE_STATE_CHANGED");
             ServiceState serviceState = ServiceState.newFromBundle(intent.getExtras());
             int newState = serviceState.getState();
-            if (newState != mServiceState) {
+            long subId = intent.getLongExtra(PhoneConstants.SUBSCRIPTION_KEY,
+                    SubscriptionManager.INVALID_SUB_ID);
+            SubInfoRecord subInfo = SubscriptionManager.
+                    getSubInfoForSubscriber(subId);
+            if (subInfo == null) {
+                loge("subId is not active:" + subId);
+                return;
+            }
+            int slotId = subInfo.slotId;
+            if (mServiceState == null) {
+                int phoneCount = TelephonyManager.getDefault().getPhoneCount();
+                mServiceState = new int[phoneCount];
+                for (int i = 0; i < phoneCount; i++) {
+                    mServiceState[i] =  ServiceState.STATE_OUT_OF_SERVICE;
+                }
+            }
+            if (newState != mServiceState[slotId]) {
                 Log.d(TAG, "Service state changed! " + newState + " Full: " + serviceState +
-                        " Current state=" + mServiceState);
-                mServiceState = newState;
+                        " Current state=" + mServiceState[slotId]);
+                mServiceState[slotId] = newState;
                 if (newState == ServiceState.STATE_IN_SERVICE ||
                         newState == ServiceState.STATE_EMERGENCY_ONLY) {
-                    startConfigService(context.getApplicationContext());
+	                    startConfigService(context.getApplicationContext(), slotId);
                 }
             }
         } else if (Intent.ACTION_AIRPLANE_MODE_CHANGED.equals(action)) {
@@ -105,10 +122,10 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
         } else if (Telephony.Sms.Intents.SMS_SERVICE_CATEGORY_PROGRAM_DATA_RECEIVED_ACTION
                 .equals(action)) {
             if (privileged) {
-                int phoneId = intent.getIntExtra(PhoneConstants.SLOT_KEY,
+                mPhoneId = intent.getIntExtra(PhoneConstants.SLOT_KEY,
                         SubscriptionManager.getPhoneId(
                         SubscriptionManager.getDefaultSmsSubId()));
-                Log.d(TAG, "onReceive SMS_CATEGORY_PROGRAM_DATA phoneId :" + phoneId);
+                Log.d(TAG, "onReceive SMS_CATEGORY_PROGRAM_DATA phoneId :" + mPhoneId);
                 CdmaSmsCbProgramData[] programDataList = (CdmaSmsCbProgramData[])
                         intent.getParcelableArrayExtra("program_data_list");
                 if (programDataList != null) {
@@ -121,11 +138,11 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
             }
         } else if (GET_LATEST_CB_AREA_INFO_ACTION.equals(action)) {
             if (privileged) {
-                int phoneId = intent.getIntExtra(PhoneConstants.PHONE_KEY,
+                mPhoneId = intent.getIntExtra(PhoneConstants.PHONE_KEY,
                         SubscriptionManager.getPhoneId(
                         SubscriptionManager.getDefaultSmsSubId()));
-                Log.d(TAG, "onReceive GET_LATEST_CB_AREA_INFO_ACTION phoneId :" + phoneId);
-                CellBroadcastMessage message = CellBroadcastReceiverApp.getLatestAreaInfo(phoneId);
+                Log.d(TAG, "onReceive GET_LATEST_CB_AREA_INFO_ACTION phoneId :" + mPhoneId);
+                CellBroadcastMessage message = CellBroadcastReceiverApp.getLatestAreaInfo(mPhoneId);
                 if (message != null) {
                     Intent areaInfoIntent = new Intent(
                             CellBroadcastAlertService.CB_AREA_INFO_RECEIVED_ACTION);
