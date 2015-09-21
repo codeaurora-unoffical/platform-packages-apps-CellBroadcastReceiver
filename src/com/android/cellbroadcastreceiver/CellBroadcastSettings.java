@@ -17,6 +17,7 @@
 package com.android.cellbroadcastreceiver;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.os.UserManager;
@@ -99,6 +100,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
     // Preference key for whether to enable channel 60 notifications
     public static final String KEY_ENABLE_CHANNEL_60_ALERTS = "enable_channel_60_alerts";
 
+    // Customize the channel to enable
+    public static final String KEY_ENABLE_CHANNELS_ALERTS = "enable_channels_alerts";
+    public static final String KEY_DISABLE_CHANNELS_ALERTS = "disable_channels_alerts";
+
+
     // Preference key for initial opt-in/opt-out dialog.
     public static final String KEY_SHOW_CMAS_OPT_OUT_DIALOG = "show_cmas_opt_out_dialog";
 
@@ -154,7 +160,13 @@ public class CellBroadcastSettings extends PreferenceActivity {
 
         addPreferencesFromResource(R.xml.preferences);
         mSir = mSelectableSubInfos.size() > 0 ? mSelectableSubInfos.get(0) : null;
-        if (mSelectableSubInfos.size() > 1) {
+        if (getResources().getBoolean(R.bool.def_custome_cell_broadcast_layout)) {
+            Intent intent = new Intent();
+            intent.setClass(this, CustomCellBroadcastSettingsActivity.class);
+            startActivity(intent);
+            this.finish();
+            return;
+        } else if (mSelectableSubInfos.size() > 1) {
             setContentView(com.android.internal.R.layout.common_tab_settings);
 
             mTabHost = (TabHost) findViewById(android.R.id.tabhost);
@@ -492,7 +504,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
 
             if (mChannel50CheckBox != null) {
                 if (SubscriptionManager.getBooleanSubscriptionProperty(mSir.getSubscriptionId(),
-                        SubscriptionManager.CB_CHANNEL_50_ALERT, true, this)) {
+                        SubscriptionManager.CB_CHANNEL_50_ALERT,
+                        getResources().getBoolean(R.bool.def_channel_50_enabled), this)) {
                     mChannel50CheckBox.setChecked(true);
                 } else {
                     mChannel50CheckBox.setChecked(false);
