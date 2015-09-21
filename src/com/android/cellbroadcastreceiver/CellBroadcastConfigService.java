@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.os.Bundle;
 import android.os.SystemProperties;
 import android.preference.PreferenceManager;
 import android.telephony.CellBroadcastMessage;
@@ -34,6 +35,9 @@ import com.android.internal.telephony.cdma.sms.SmsEnvelope;
 import com.android.internal.telephony.gsm.SmsCbConstants;
 
 import static com.android.cellbroadcastreceiver.CellBroadcastReceiver.DBG;
+
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * This service manages enabling and disabling ranges of message identifiers
@@ -149,13 +153,15 @@ public class CellBroadcastConfigService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         if (ACTION_ENABLE_CHANNELS.equals(intent.getAction())) {
-            int subId = intent.getExtras().getInt(PhoneConstants.SUBSCRIPTION_KEY);
+            Bundle extras = intent.getExtras();
+            int subId = extras != null ? extras.getInt(PhoneConstants.SUBSCRIPTION_KEY) : 0;
 
             try {
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
                 Resources res = getResources();
 
 
+                boolean isCustomized = res.getBoolean(R.bool.def_custome_cell_broadcast_layout);
                 // boolean for each user preference checkbox, true for checked, false for
                 // unchecked
                 // Note: If enableEmergencyAlerts is false, it disables ALL emergency broadcasts
@@ -164,6 +170,14 @@ public class CellBroadcastConfigService extends IntentService {
 
                 boolean enableEmergencyAlerts = SubscriptionManager.getBooleanSubscriptionProperty(
                         subId, SubscriptionManager.CB_EMERGENCY_ALERT, true, this);
+
+                if (isCustomized) {
+                    enableEmergencyAlerts = enableEmergencyAlerts || prefs.getBoolean(
+                            CellBroadcastSettings.KEY_ENABLE_EMERGENCY_ALERTS, true);
+                    if (!enableEmergencyAlerts) {
+                        return;
+                    }
+                }
 
                 TelephonyManager tm = (TelephonyManager) getSystemService(
                         Context.TELEPHONY_SERVICE);
@@ -178,7 +192,8 @@ public class CellBroadcastConfigService extends IntentService {
 
                 boolean enableChannel50Alerts = enableChannel50Support &&
                         SubscriptionManager.getBooleanSubscriptionProperty(subId,
-                                SubscriptionManager.CB_CHANNEL_50_ALERT, true, this);
+                                SubscriptionManager.CB_CHANNEL_50_ALERT,
+                                getResources().getBoolean(R.bool.def_channel_50_enabled), this);
 
                 boolean enableChannel60Alerts = enableChannel60Support &&
                         SubscriptionManager.getBooleanSubscriptionProperty(subId,
@@ -415,6 +430,27 @@ public class CellBroadcastConfigService extends IntentService {
                             SmsManager.CELL_BROADCAST_RAN_TYPE_GSM);
                     manager.disableCellBroadcast(SmsEnvelope.SERVICE_CATEGORY_CMAS_TEST_MESSAGE,
                             SmsManager.CELL_BROADCAST_RAN_TYPE_CDMA);
+                }
+
+                Set<String> enabledChannels = new java.util.HashSet<String>();
+                Set<String> disabledChannels = new java.util.HashSet<String>();
+                if (isCustomized) {
+                    enabledChannels = PreferenceManager.getDefaultSharedPreferences(this)
+                            .getStringSet(CellBroadcastSettings.KEY_ENABLE_CHANNELS_ALERTS,
+                            enabledChannels);
+                    disabledChannels = PreferenceManager.getDefaultSharedPreferences(this)
+                            .getStringSet(CellBroadcastSettings.KEY_DISABLE_CHANNELS_ALERTS,
+                            disabledChannels);
+                    for (String channel : enabledChannels) {
+                        if (DBG) Log.d(TAG, "enabling cell broadcast: channel(" + channel + ")");
+                        manager.enableCellBroadcast(Integer.parseInt(channel),
+                                SmsManager.CELL_BROADCAST_RAN_TYPE_GSM);
+                    }
+                    for (String channel : disabledChannels) {
+                        if (DBG)Log.d(TAG, "disabling cell broadcast: channel(" + channel + ")");
+                        manager.disableCellBroadcast(Integer.parseInt(channel),
+                                SmsManager.CELL_BROADCAST_RAN_TYPE_GSM);
+                    }
                 }
             } catch (Exception ex) {
                 Log.e(TAG, "exception enabling cell broadcast channels", ex);
