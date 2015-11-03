@@ -43,6 +43,8 @@ import com.android.internal.telephony.PhoneConstants;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import android.database.Cursor;
+import java.util.Iterator;
 
 /**
  * This service manages the display and animation of broadcast messages.
@@ -73,6 +75,18 @@ public class CellBroadcastAlertService extends Service {
 
     /** Channel 60 Cell Broadcast. */
     static final int CB_CHANNEL_60 = 60;
+    private static int TIME12HOURS = 12*60*60*1000;
+    private boolean mDuplicateCheckDatabase = false;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mDuplicateCheckDatabase = getResources().getBoolean(
+                R.bool.config_regional_wea_duplicated_check_database);
+        if (mDuplicateCheckDatabase) {
+            initHalfDayCmasList();
+        }
+    }
 
     /**
      *  Container for service category, serial number, location, and message body hash code for
@@ -84,6 +98,8 @@ public class CellBroadcastAlertService extends Service {
         private final SmsCbLocation mLocation;
         private final int mBodyHash;
         private final SmsCbEtwsInfo mEtwsWarningInfo;
+        private final long mDeliveryTime;
+        private final String mMessageBody;
 
         MessageServiceCategoryAndScope(int serviceCategory, int serialNumber,
                 SmsCbLocation location, int bodyHash) {
@@ -92,7 +108,10 @@ public class CellBroadcastAlertService extends Service {
             mLocation = location;
             mBodyHash = bodyHash;
             mEtwsWarningInfo = null;
+            mMessageBody = null;
+            mDeliveryTime = 0;
         }
+
         MessageServiceCategoryAndScope(int serviceCategory, int serialNumber,
                 SmsCbLocation location, int bodyHash, SmsCbEtwsInfo etwsWarningInfo) {
             mServiceCategory = serviceCategory;
@@ -100,6 +119,19 @@ public class CellBroadcastAlertService extends Service {
             mLocation = location;
             mBodyHash = bodyHash;
             mEtwsWarningInfo = etwsWarningInfo;
+            mMessageBody = null;
+            mDeliveryTime = 0;
+        }
+
+        MessageServiceCategoryAndScope(int serviceCategory, int serialNumber,
+                SmsCbLocation location, String messageBody, long deliveryTime, int bodyHash) {
+            mServiceCategory = serviceCategory;
+            mSerialNumber = serialNumber;
+            mLocation = location;
+            mMessageBody = messageBody;
+            mDeliveryTime = deliveryTime;
+            mBodyHash = bodyHash;
+            mEtwsWarningInfo = null;
         }
 
         @Override
@@ -156,6 +188,138 @@ public class CellBroadcastAlertService extends Service {
 
     /** Index of message ID to replace with new message ID when max message IDs are received. */
     private static int sCmasIdListIndex = 0;
+    /** List of message IDs received for recent 12 hours. */
+    private static final ArrayList<MessageServiceCategoryAndScope> s12HIdList =
+        new ArrayList<MessageServiceCategoryAndScope>(8);
+
+    private void initHalfDayCmasList() {
+        long now = System.currentTimeMillis();
+        // This is used to query necessary fields from cmas table
+        // which are related duplicate check
+        // for example receive date, cmas id and so on
+        String[] project = new String[] {
+            Telephony.CellBroadcasts.PLMN,
+            Telephony.CellBroadcasts.LAC,
+            Telephony.CellBroadcasts.CID,
+            Telephony.CellBroadcasts.DELIVERY_TIME,
+            Telephony.CellBroadcasts.SERVICE_CATEGORY,
+            Telephony.CellBroadcasts.SERIAL_NUMBER,
+            Telephony.CellBroadcasts.MESSAGE_BODY};
+        Cursor cursor = getApplicationContext().getContentResolver().query(
+                Telephony.CellBroadcasts.CONTENT_URI,project,
+                Telephony.CellBroadcasts.DELIVERY_TIME + ">?",
+                new String[]{now - TIME12HOURS + ""},
+                Telephony.CellBroadcasts.DELIVERY_TIME + " DESC");
+        if (s12HIdList != null) {
+            s12HIdList.clear();
+        }
+        MessageServiceCategoryAndScope newCmasId;
+        int serviceCategory;
+        int serialNumber;
+        String messageBody;
+        long deliveryTime;
+        if(cursor != null){
+            int plmnColumn = cursor.getColumnIndex(Telephony.CellBroadcasts.PLMN);
+            int lacColumn = cursor.getColumnIndex(Telephony.CellBroadcasts.LAC);
+            int cidColumn = cursor.getColumnIndex(Telephony.CellBroadcasts.CID);
+            int serviceCategoryColumn = cursor.getColumnIndex(
+                    Telephony.CellBroadcasts.SERVICE_CATEGORY);
+            int serialNumberColumn = cursor.getColumnIndex(
+                    Telephony.CellBroadcasts.SERIAL_NUMBER);
+            int messageBodyColumn = cursor.getColumnIndex(Telephony.CellBroadcasts.MESSAGE_BODY);
+            int deliveryTimeColumn = cursor.getColumnIndex(
+                    Telephony.CellBroadcasts.DELIVERY_TIME);
+            while(cursor.moveToNext()){
+                String plmn = getStringColumn(plmnColumn, cursor);
+                int lac = getIntColumn(lacColumn, cursor);
+                int cid = getIntColumn(cidColumn, cursor);
+                SmsCbLocation location = new SmsCbLocation(plmn, lac, cid);
+                serviceCategory = getIntColumn(serviceCategoryColumn, cursor);
+                serialNumber = getIntColumn(serialNumberColumn, cursor);
+                messageBody = getStringColumn(messageBodyColumn, cursor);
+                deliveryTime = getLongColumn(deliveryTimeColumn, cursor);
+                newCmasId = new MessageServiceCategoryAndScope(
+                        serviceCategory, serialNumber, location, messageBody,
+                        deliveryTime, messageBody.hashCode());
+                s12HIdList.add(newCmasId);
+            }
+        }
+        if(cursor != null){
+            cursor.close();
+        }
+    }
+
+    private boolean isDuplicated(SmsCbMessage message) {
+        if(!mDuplicateCheckDatabase) {
+            return false ;
+        }
+        final CellBroadcastMessage cbm = new CellBroadcastMessage(message);
+        long lastestDeliveryTime = cbm.getDeliveryTime();
+        int hashCode = message.isEtwsMessage() ? message.getMessageBody().hashCode() : 0;
+        MessageServiceCategoryAndScope newCmasId = new MessageServiceCategoryAndScope(
+                message.getServiceCategory(), message.getSerialNumber(),
+                message.getLocation(), message.getMessageBody(), lastestDeliveryTime, hashCode);
+        Iterator<MessageServiceCategoryAndScope> iterator = s12HIdList.iterator();
+        ArrayList<MessageServiceCategoryAndScope> tempMessageList =
+                new ArrayList<MessageServiceCategoryAndScope>();
+        boolean duplicatedMessage = false;
+        while(iterator.hasNext()){
+            MessageServiceCategoryAndScope tempMessage =
+                    (MessageServiceCategoryAndScope)iterator.next();
+            boolean moreThan12Hour = (lastestDeliveryTime - tempMessage.mDeliveryTime >= TIME12HOURS);
+            if (moreThan12Hour) {
+                break;
+            } else {
+                tempMessageList.add(tempMessage);
+                if (tempMessage.equals(newCmasId)) {
+                    duplicatedMessage = true;
+                    break;
+                }
+            }
+        }
+        if (duplicatedMessage) {
+            if (tempMessageList != null) {
+                tempMessageList.clear();
+                tempMessageList = null;
+            }
+            return true;
+        } else {
+            if (s12HIdList != null) {
+                s12HIdList.clear();
+            }
+            if (tempMessageList != null) {
+                s12HIdList.addAll(tempMessageList);
+                tempMessageList.clear();
+                tempMessageList = null;
+            }
+            s12HIdList.add(0, newCmasId);
+        }
+        return false;
+    }
+
+    private String getStringColumn (int column, Cursor cursor) {
+        if (column != -1 && !cursor.isNull(column)) {
+            return cursor.getString(column);
+        } else {
+            return null;
+        }
+    }
+
+    private int getIntColumn (int column, Cursor cursor) {
+        if (column != -1 && !cursor.isNull(column)) {
+            return cursor.getInt(column);
+        } else {
+            return -1;
+        }
+    }
+
+    private long getLongColumn (int column, Cursor cursor) {
+        if (column != -1 && !cursor.isNull(column)) {
+            return cursor.getLong(column);
+        } else {
+            return -1;
+        }
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -214,7 +378,11 @@ public class CellBroadcastAlertService extends Service {
         // and category should be used for duplicate detection.
         int hashCode = message.isEtwsMessage() ? message.getMessageBody().hashCode() : 0;
 
-        if (mUseDupDetection) {
+        if (mDuplicateCheckDatabase) {
+            if (isDuplicated(message)) {
+                return;
+            }
+        } else if (mUseDupDetection) {
             // Check for duplicate message IDs according to CMAS carrier requirements. Message IDs
             // are stored in volatile memory. If the maximum of 65535 messages is reached, the
             // message ID of the oldest message is deleted from the list.
