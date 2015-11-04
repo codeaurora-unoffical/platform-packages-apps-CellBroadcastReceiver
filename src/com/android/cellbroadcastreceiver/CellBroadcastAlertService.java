@@ -161,7 +161,8 @@ public class CellBroadcastAlertService extends Service {
                 return (mServiceCategory == other.mServiceCategory &&
                         mSerialNumber == other.mSerialNumber &&
                         mLocation.equals(other.mLocation) &&
-                        mBodyHash == other.mBodyHash);
+                        mBodyHash == other.mBodyHash &&
+                        mMessageBody.equals(other.mMessageBody));
             }
             return false;
         }
