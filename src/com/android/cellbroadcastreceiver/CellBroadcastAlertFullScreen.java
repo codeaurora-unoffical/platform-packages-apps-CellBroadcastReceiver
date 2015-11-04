@@ -356,7 +356,12 @@ public class CellBroadcastAlertFullScreen extends Activity {
         ((TextView) findViewById(R.id.message)).setText(message.getMessageBody());
 
         // Set alert reminder depending on user preference
-        CellBroadcastAlertReminder.queueAlertReminder(this, true, message.getSubId());
+        if (getResources().getBoolean(
+                    R.bool.config_regional_wea_alert_reminder_interval)) {
+            CellBroadcastAlertReminder.queueAlertReminderAudio(this, true, message);
+        } else {
+            CellBroadcastAlertReminder.queueAlertReminder(this, true, message.getSubId());
+        }
     }
 
     /**

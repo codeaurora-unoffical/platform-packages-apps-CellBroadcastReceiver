@@ -22,9 +22,11 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
@@ -71,6 +73,26 @@ public class CellBroadcastAlertReminder extends Service {
         int subId = intent.getExtras().getInt(PhoneConstants.SUBSCRIPTION_KEY);
         if(DBG) Log.d(TAG, "subscription id = " + subId);
 
+        int phoneId = intent.getIntExtra(PhoneConstants.SLOT_KEY,
+                SubscriptionManager.getPhoneId(SubscriptionManager.getDefaultSmsSubId()));
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        AudioManager audioManager = (AudioManager)this.getSystemService(
+                Context.AUDIO_SERVICE);
+        if (getResources().getBoolean(
+                    R.bool.config_regional_wea_alert_reminder_interval)
+                && (audioManager.getRingerMode() != AudioManager.RINGER_MODE_SILENT)
+                && prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_VIBRATE
+                    + phoneId, true)) {
+            CellBroadcastMessage message = intent.getParcelableExtra("CellBroadcastMessage");
+            playAlertReminderAudio(message, prefs, phoneId);
+            if (queueAlertReminderAudio(this, false, message)) {
+                return START_STICKY;
+            } else {
+                log("no reminders queued");
+                stopSelf();
+                return START_NOT_STICKY;
+            }
+        }
         log("playing alert reminder");
         playAlertReminderSound();
 
@@ -81,6 +103,50 @@ public class CellBroadcastAlertReminder extends Service {
             stopSelf();
             return START_NOT_STICKY;
         }
+    }
+
+    private void playAlertReminderAudio(CellBroadcastMessage message,
+            final SharedPreferences prefs, int phoneId) {
+        Intent audioIntent = new Intent(this, CellBroadcastAlertAudio.class);
+        audioIntent.setAction(CellBroadcastAlertAudio.ACTION_START_ALERT_AUDIO);
+        int duration;   // alert audio duration in ms
+        if (message.isCmasMessage()) {
+            // CMAS requirement: duration of the audio attention signal is 10.5 seconds.
+            duration = 10500;
+        } else {
+            duration = Integer.parseInt(prefs.getString(
+                        CellBroadcastSettings.KEY_ALERT_SOUND_DURATION,
+                        CellBroadcastSettings.ALERT_SOUND_DEFAULT_DURATION)) * 1000;
+        }
+        audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_DURATION_EXTRA, duration);
+
+        if (message.isEtwsMessage()) {
+            // For ETWS, always vibrate, even in silent mode.
+            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_VIBRATE_EXTRA, true);
+            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_ETWS_VIBRATE_EXTRA, true);
+        } else {
+            // For other alerts, vibration can be disabled in app settings.
+            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_VIBRATE_EXTRA,
+                    prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_VIBRATE, true));
+        }
+
+        String messageBody = message.getMessageBody();
+
+        if (prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_SPEECH, true)) {
+            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_MESSAGE_BODY, messageBody);
+
+            String language = message.getLanguageCode();
+            if (message.isEtwsMessage() && !"ja".equals(language)) {
+                Log.w(TAG, "bad language code for ETWS - using Japanese TTS");
+                language = "ja";
+            } else if (message.isCmasMessage() && !"en".equals(language)) {
+                Log.w(TAG, "bad language code for CMAS - using English TTS");
+                language = "en";
+            }
+            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_MESSAGE_LANGUAGE,
+                    language);
+        }
+        startService(audioIntent);
     }
 
     /**
@@ -131,7 +197,7 @@ public class CellBroadcastAlertReminder extends Service {
         sPlayReminderIntent = PendingIntent.getService(context, 0, playIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        AlarmManager alarmManager = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) {
             loge("can't get Alarm Service");
             return false;
@@ -143,6 +209,67 @@ public class CellBroadcastAlertReminder extends Service {
         alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, 
                 triggerTime, sPlayReminderIntent);
         return true;
+    }
+
+    static boolean queueAlertReminderAudio(Context context, boolean firstTime,
+            CellBroadcastMessage message) {
+        int phoneId = SubscriptionManager.getPhoneId(message.getSubId());
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        AudioManager audioManager = (AudioManager)context.getSystemService(
+                Context.AUDIO_SERVICE);
+        if ((audioManager.getRingerMode() != AudioManager.RINGER_MODE_SILENT)
+                && prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_VIBRATE
+                    + phoneId, true)) {
+            // Stop any alert reminder sound and cancel any previously queued reminders.
+            cancelAlertReminder();
+            SharedPreferences.Editor editor = prefs.edit();
+            Bundle bundle = new Bundle();
+            bundle.putParcelable("CellBroadcastMessage", message);
+            // if it the first time.
+            String prefStr = prefs.getString("next_time_reminder", null);
+            int interval;
+            if (firstTime) {
+                interval = 1;
+                editor.putString("next_time_reminder", "3");
+            } else {
+                prefStr = prefs.getString("next_time_reminder", null);
+                try {
+                    interval = Integer.valueOf(prefStr);
+                } catch (NumberFormatException ignored) {
+                    loge("invalid alert reminder interval preference: " + prefStr);
+                    return false;
+                }
+                if (interval > 5) {
+                    return false;
+                } else {
+                    editor.putString("next_time_reminder", interval + 2 + "");
+                }
+            }
+            editor.commit();
+            if (DBG) log("queueAlertReminder() in " + interval + " minutes");
+
+            Intent playIntent = new Intent(context, CellBroadcastAlertReminder.class);
+            playIntent.putExtras(bundle);
+            playIntent.setAction(ACTION_PLAY_ALERT_REMINDER);
+            playIntent.putExtra(PhoneConstants.SLOT_KEY, phoneId);
+            sPlayReminderIntent = PendingIntent.getService(context, 0, playIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT);
+
+            AlarmManager alarmManager = (AlarmManager) context.getSystemService(
+                    Context.ALARM_SERVICE);
+            if (alarmManager == null) {
+                loge("can't get Alarm Service");
+                return false;
+            }
+
+            // remind user after 2 minutes or 15 minutes
+            long triggerTime = SystemClock.elapsedRealtime() + (interval * 60000);
+            alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime,
+                    sPlayReminderIntent);
+            return true;
+        } else {
+            return queueAlertReminder(context, firstTime, phoneId);
+        }
     }
 
     /**
