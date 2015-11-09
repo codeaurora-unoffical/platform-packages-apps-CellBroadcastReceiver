@@ -60,6 +60,11 @@
                         android:dialogTitle="@string/alert_reminder_interval_title" />
 
         <CheckBoxPreference android:defaultValue="true"
+                            android:key="enable_alert_tone"
+                            android:summary="@string/enable_alert_tone_summary"
+                            android:title="@string/enable_alert_tone_title" />
+
+        <CheckBoxPreference android:defaultValue="true"
                             android:key="enable_alert_vibrate"
                             android:summary="@string/enable_alert_vibrate_summary"
                             android:title="@string/enable_alert_vibrate_title" />

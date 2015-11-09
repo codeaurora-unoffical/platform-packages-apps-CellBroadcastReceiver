@@ -46,6 +46,9 @@ import java.util.HashSet;
 import android.database.Cursor;
 import java.util.Iterator;
 
+import android.preference.PreferenceManager;
+import android.content.SharedPreferences;
+
 /**
  * This service manages the display and animation of broadcast messages.
  * Emergency messages display with a flashing animated exclamation mark icon,
@@ -588,6 +591,13 @@ public class CellBroadcastAlertService extends Service {
             boolean vibrateFlag = SubscriptionManager.getBooleanSubscriptionProperty(
                     message.getSubId(), SubscriptionManager.CB_ALERT_VIBRATE, true, this);
             audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_VIBRATE_EXTRA, vibrateFlag);
+        }
+
+        if (getResources().getBoolean(
+                    R.bool.config_regional_wea_alert_tone_enable)) {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_TONE_EXTRA,
+                    prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_TONE, true));
         }
 
         String messageBody = message.getMessageBody();

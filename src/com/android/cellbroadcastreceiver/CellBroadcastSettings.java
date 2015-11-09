@@ -18,6 +18,7 @@ package com.android.cellbroadcastreceiver;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.os.UserManager;
@@ -26,6 +27,7 @@ import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
+import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.provider.Settings;
 import android.telephony.CarrierConfigManager;
@@ -58,6 +60,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
 
     // Enable vibration on alert (unless master volume is silent).
     public static final String KEY_ENABLE_ALERT_VIBRATE = "enable_alert_vibrate";
+
+    public static final String KEY_ENABLE_ALERT_TONE = "enable_alert_tone";
 
     // Speak contents of alert after playing the alert sound.
     public static final String KEY_ENABLE_ALERT_SPEECH = "enable_alert_speech";
@@ -135,6 +139,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
     private CheckBoxPreference mChannel60CheckBox;
     private CheckBoxPreference mCmasCheckBox;
     private CheckBoxPreference mOptOutCheckBox;
+    private static CheckBoxPreference mEnableAlertsTone;
     private PreferenceCategory mAlertCategory;
 
     @Override
@@ -185,6 +190,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
     private void updatePreferences() {
 
         PreferenceScreen prefScreen = getPreferenceScreen();
+        final SharedPreferences prefs = PreferenceManager
+            .getDefaultSharedPreferences(this);
 
         if (prefScreen != null) {
             prefScreen.removeAll();
@@ -219,6 +226,14 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     findPreference(KEY_SHOW_CMAS_OPT_OUT_DIALOG);
             mAlertCategory = (PreferenceCategory)
                     findPreference(KEY_CATEGORY_ALERT_SETTINGS);
+            if (getResources().getBoolean(
+                        R.bool.config_regional_wea_alert_tone_enable)) {
+                mEnableAlertsTone =
+                    (CheckBoxPreference) findPreference(KEY_ENABLE_ALERT_TONE);
+            } else {
+                PreferenceScreen preferenceScreen = getPreferenceScreen();
+                preferenceScreen.removePreference(findPreference(KEY_ENABLE_ALERT_TONE));
+            }
 
             if(mSir == null) {
                 mExtremeCheckBox.setEnabled(false);
@@ -235,6 +250,12 @@ public class CellBroadcastSettings extends PreferenceActivity {
                 mCmasCheckBox.setEnabled(false);
                 mOptOutCheckBox.setEnabled(false);
                 return;
+            }
+
+            if (getResources().getBoolean(
+                    R.bool.config_regional_wea_alert_tone_enable)) {
+                mEnableAlertsTone.setChecked(prefs.getBoolean(
+                        KEY_ENABLE_ALERT_TONE, true));
             }
 
             // Handler for settings that require us to reconfigure enabled channels in radio
@@ -586,6 +607,22 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     mCmasCheckBox.setChecked(false);
                 }
                 mCmasCheckBox.setOnPreferenceChangeListener(startConfigServiceListener);
+            }
+
+            if (getResources().getBoolean(
+                    R.bool.config_regional_wea_alert_tone_enable)
+                    && mEnableAlertsTone != null) {
+                mEnableAlertsTone.setOnPreferenceChangeListener(
+                        new Preference.OnPreferenceChangeListener() {
+                            @Override
+                            public boolean onPreferenceChange(Preference pref, Object newValue) {
+                                SharedPreferences.Editor editor = prefs.edit();
+                                String value = String.valueOf(newValue);
+                                editor.putBoolean(KEY_ENABLE_ALERT_TONE,
+                                    Boolean.valueOf((value)));
+                                return true;
+                            }
+                        });
             }
         }
     }
