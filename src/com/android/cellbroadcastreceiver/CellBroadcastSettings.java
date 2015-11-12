@@ -72,6 +72,10 @@ public class CellBroadcastSettings extends PreferenceActivity {
     // Preference category for ETWS related settings.
     public static final String KEY_CATEGORY_ETWS_SETTINGS = "category_etws_settings";
 
+    // Whether to display CMAS preidential alerts (default is enabled).
+    public static final String KEY_ENABLE_PRESIDENTIAL_ALERTS =
+            "enable_cmas_presidential_alerts";
+
     // Whether to display CMAS extreme threat notifications (default is enabled).
     public static final String KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS =
             "enable_cmas_extreme_threat_alerts";
@@ -126,6 +130,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
     private TabWidget mTabWidget;
     private List<SubscriptionInfo> mSelectableSubInfos;
 
+    private CheckBoxPreference mPresidentialCheckBox;
     private CheckBoxPreference mExtremeCheckBox;
     private CheckBoxPreference mSevereCheckBox;
     private CheckBoxPreference mAmberCheckBox;
@@ -198,6 +203,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
             // Load the preferences from an XML resource
             addPreferencesFromResource(R.xml.preferences);
 
+            mPresidentialCheckBox = (CheckBoxPreference)
+            findPreference(KEY_ENABLE_PRESIDENTIAL_ALERTS);
             mExtremeCheckBox = (CheckBoxPreference)
                     findPreference(KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS);
             mSevereCheckBox = (CheckBoxPreference)
@@ -562,6 +569,13 @@ public class CellBroadcastSettings extends PreferenceActivity {
                 }
                 mEtwsTestCheckBox.setOnPreferenceChangeListener(startConfigServiceListener);
             }
+
+           if (getResources().getBoolean(R.bool.config_regional_wea_show_presidential_alert) && mPresidentialCheckBox != null) {
+               //Presidential Alerts should be always allowed.
+               //Hence the option should be greyed out.
+               mPresidentialCheckBox.setChecked(true);
+               mPresidentialCheckBox.setEnabled(false);
+           }
 
             if (mExtremeCheckBox != null) {
                 if (SubscriptionManager.getBooleanSubscriptionProperty(mSir.getSubscriptionId(),

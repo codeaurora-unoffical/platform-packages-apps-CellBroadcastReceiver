@@ -112,6 +112,10 @@
     <!-- Preference summary for enable ETWS test alerts checkbox. [CHAR LIMIT=100] -->
     <string name="enable_etws_test_alerts_summary">Display test broadcasts for Earthquake Tsunami Warning System</string>
 
+    <!-- Preference title for presidential Alerts checkbox. [CHAR LIMIT=30] -->
+    <string name="enable_cmas_presidential_alerts_title">Show presidential alerts</string>
+    <!-- Preference summary for presidential Alerts checkbox. [CHAR LIMIT=100] -->
+    <string name="enable_cmas_presidential_alerts_summary">Always display presidential alerts</string>
     <!-- Preference title for enable CMAS extreme threat alerts checkbox. [CHAR LIMIT=30] -->
     <string name="enable_cmas_extreme_threat_alerts_title">Show extreme threats</string>
     <!-- Preference summary for enable CMAS extreme threat alerts checkbox. [CHAR LIMIT=100] -->
