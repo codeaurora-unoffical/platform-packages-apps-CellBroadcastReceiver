@@ -71,6 +71,10 @@ public class CellBroadcastSettings extends PreferenceActivity {
     // Preference category for ETWS related settings.
     public static final String KEY_CATEGORY_ETWS_SETTINGS = "category_etws_settings";
 
+    // Whether to display CMAS presential alerts (default is enabled).
+    public static final String KEY_ENABLE_CMAS_PRESIDENTIAL_ALERTS =
+            "enable_cmas_presidential_alerts";
+
     // Whether to display CMAS extreme threat notifications (default is enabled).
     public static final String KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS =
             "enable_cmas_extreme_threat_alerts";
@@ -213,6 +217,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     (CheckBoxPreference) findPreference(KEY_ENABLE_CHANNEL_60_ALERTS);
             final CheckBoxPreference enableEtwsAlerts =
                     (CheckBoxPreference) findPreference(KEY_ENABLE_ETWS_TEST_ALERTS);
+            final CheckBoxPreference enableCmasPresentialAlerts =
+                    (CheckBoxPreference) findPreference(KEY_ENABLE_CMAS_PRESIDENTIAL_ALERTS);
             final CheckBoxPreference enableCmasExtremeAlerts =
                     (CheckBoxPreference) findPreference(KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS);
             final CheckBoxPreference enableCmasSevereAlerts =
@@ -257,6 +263,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     getResources().getBoolean(R.bool.def_channel_60_enabled)));
             enableEtwsAlerts.setChecked(prefs.getBoolean(
                     KEY_ENABLE_ETWS_TEST_ALERTS + sPhoneId, false));
+            if (getResources().getBoolean(
+                    R.bool.config_regional_wea_show_presidential_alert)) {
+                enableCmasPresentialAlerts.setChecked(true);
+                enableCmasPresentialAlerts.setEnabled(false);
+            }
             enableCmasExtremeAlerts.setChecked(prefs.getBoolean(
                     KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS + sPhoneId, true));
             enableCmasSevereAlerts.setChecked(prefs.getBoolean(
