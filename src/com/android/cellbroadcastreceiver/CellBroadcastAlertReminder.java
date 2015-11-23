@@ -80,10 +80,7 @@ public class CellBroadcastAlertReminder extends Service {
         AudioManager audioManager = (AudioManager)this.getSystemService(
                 Context.AUDIO_SERVICE);
         if (getResources().getBoolean(
-                    R.bool.config_regional_wea_alert_reminder_interval)
-                && (audioManager.getRingerMode() != AudioManager.RINGER_MODE_SILENT)
-                && prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_VIBRATE
-                    + phoneId, true)) {
+                R.bool.config_regional_wea_alert_reminder_interval)) {
             CellBroadcastMessage message = intent.getParcelableExtra("CellBroadcastMessage");
             playAlertReminderAudio(message, prefs, phoneId);
             if (queueAlertReminderAudio(this, false, message)) {
@@ -147,6 +144,8 @@ public class CellBroadcastAlertReminder extends Service {
             audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_TONE_EXTRA,
                     prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_TONE, true));
         }
+
+        audioIntent.putExtra("isFirstTime", false);
         String messageBody = message.getMessageBody();
 
         if (prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_SPEECH, true)) {
@@ -228,15 +227,12 @@ public class CellBroadcastAlertReminder extends Service {
         return true;
     }
 
-    static boolean queueAlertReminderAudio(Context context, boolean firstTime,
+    static boolean queueAlertReminderAudio(final Context context, boolean firstTime,
             CellBroadcastMessage message) {
         int phoneId = SubscriptionManager.getPhoneId(message.getSubId());
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        AudioManager audioManager = (AudioManager)context.getSystemService(
-                Context.AUDIO_SERVICE);
-        if ((audioManager.getRingerMode() != AudioManager.RINGER_MODE_SILENT)
-                && prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_VIBRATE
-                    + phoneId, true)) {
+        if (context.getResources().getBoolean(
+                R.bool.config_regional_wea_alert_reminder_interval)) {
             // Stop any alert reminder sound and cancel any previously queued reminders.
             cancelAlertReminder();
             SharedPreferences.Editor editor = prefs.edit();
