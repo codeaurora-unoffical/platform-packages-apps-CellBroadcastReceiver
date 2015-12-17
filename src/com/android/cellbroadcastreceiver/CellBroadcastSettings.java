@@ -453,6 +453,20 @@ public class CellBroadcastSettings extends PreferenceActivity {
                 mAlertCategory.removePreference(findPreference(KEY_ENABLE_CMAS_AMBER_ALERTS));
             }
 
+            if (getResources().getBoolean(
+                    R.bool.config_regional_wea_rm_turn_on_notification)) {
+                if (findPreference(KEY_ENABLE_EMERGENCY_ALERTS) != null) {
+                    mAlertCategory.removePreference(findPreference(KEY_ENABLE_EMERGENCY_ALERTS));
+                }
+            }
+
+            if (getResources().getBoolean(
+                    R.bool.config_regional_wea_rm_alert_reminder)) {
+                if (findPreference(KEY_ALERT_REMINDER_INTERVAL) != null) {
+                    mAlertCategory.removePreference(findPreference(KEY_ALERT_REMINDER_INTERVAL));
+                }
+            }
+
             boolean enableChannel50Support = SubscriptionManager.getResourcesForSubId(
                     getApplicationContext(), mSir.getSubscriptionId()).getBoolean(
                     R.bool.show_brazil_settings)

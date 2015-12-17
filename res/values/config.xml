@@ -31,4 +31,6 @@
     <bool name="config_regional_wea_alert_tone_enable">false</bool>
     <bool name="config_regional_presidential_wea_with_tone_vibrate">false</bool>
     <bool name="config_regional_wea_show_presidential_alert">false</bool>
+    <bool name="config_regional_wea_rm_turn_on_notification">false</bool>
+    <bool name="config_regional_wea_rm_alert_reminder">false</bool>
 </resources>
