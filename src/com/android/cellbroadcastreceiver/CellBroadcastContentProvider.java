@@ -56,6 +56,9 @@ public class CellBroadcastContentProvider extends ContentProvider {
     /** Content URI for notifying observers. */
     static final Uri CONTENT_URI = Uri.parse("content://cellbroadcasts/");
 
+    /** Content URI for notifying observers. */
+    static final Uri PRESIDENT_PIN_URI = Uri.parse("content://cellbroadcasts/presidentpin/");
+
     /** Content URI for channel customized */
     private static final Uri CHANNEL_URI =  Uri.parse("content://cellbroadcasts/channel/");
 
@@ -75,6 +78,8 @@ public class CellBroadcastContentProvider extends ContentProvider {
 
     private static final int CB_CHANNEL_ID = 2;
 
+    private static final int CB_PRESIDENT_PIN = 3;
+
     /** The projection and the index for query the channel */
     private static final String[] PROJECTION_CHANNEL
             = new String[] { "_id", "name", "number", "enable" };
@@ -88,6 +93,7 @@ public class CellBroadcastContentProvider extends ContentProvider {
         sUriMatcher.addURI(CB_AUTHORITY, null, CB_ALL);
         sUriMatcher.addURI(CB_AUTHORITY, "#", CB_ALL_ID);
         sUriMatcher.addURI(CB_AUTHORITY, "channel", CB_CHANNEL_ID);
+        sUriMatcher.addURI(CB_AUTHORITY, "presidentpin", CB_PRESIDENT_PIN);
     }
 
     /** The database for this content provider. */
@@ -136,6 +142,10 @@ public class CellBroadcastContentProvider extends ContentProvider {
                 qb.setTables(CellBroadcastDatabaseHelper.CHANNEL_TABLE);
                 break;
 
+            case CB_PRESIDENT_PIN:
+                SQLiteDatabase tempDB = mOpenHelper.getReadableDatabase();
+                return tempDB.rawQuery(genPresidentPin(projection, selection, sortOrder), null);
+
             default:
                 Log.e(TAG, "Invalid query: " + uri);
                 throw new IllegalArgumentException("Unknown URI: " + uri);
@@ -156,6 +166,27 @@ public class CellBroadcastContentProvider extends ContentProvider {
         return c;
     }
 
+    private String genPresidentPin(String[] projection,String selection,String strOrder) {
+        String strProject = "";
+        if (projection == null) return "";
+        for(int iIndex = 0; iIndex < projection.length; iIndex++) {
+            strProject += projection[iIndex];
+            if ( (iIndex >= 0) && (iIndex < projection.length -1)) {
+                strProject += ",";
+            }
+        }
+        String strClass =  Telephony.CellBroadcasts.CMAS_MESSAGE_CLASS;
+        String strTab = CellBroadcastDatabaseHelper.TABLE_NAME;
+        String strSel = "SELECT * FROM (SELECT ";
+        String strPresidentCon = " WHERE (" + selection + ") AND " + strClass
+                + " = 0 ORDER BY " + strOrder;
+        String strgenCon = " WHERE (" + selection + ") AND " + strClass
+                + " <> 0 ORDER BY " + strOrder;
+        String strPresident = strSel + strProject + " FROM " + strTab + strPresidentCon +") AS A";
+        String strGen = strSel + strProject + " FROM " + strTab + strgenCon +") AS B";
+        String strSQL = strPresident + " UNION ALL " + strGen;
+        return strSQL;
+    }
     /**
      * Return the MIME type of the data at the specified URI.
      * @param uri the URI to query.
