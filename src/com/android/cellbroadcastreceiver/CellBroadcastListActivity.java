@@ -29,6 +29,7 @@ import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.UserHandle;
 import android.provider.Telephony;
@@ -143,13 +144,16 @@ public class CellBroadcastListActivity extends Activity {
 
         @Override
         public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+            Uri listUri = CellBroadcastContentProvider.CONTENT_URI;
+            if(getResources().getBoolean(R.bool.config_regional_wea_show_presidential_alert)) {
+                listUri = CellBroadcastContentProvider.PRESIDENT_PIN_URI;
+            }
             if(mDuplicateCheckDeletedRecords) {
-               return new CursorLoader(getActivity(), CellBroadcastContentProvider.CONTENT_URI,
-                   Telephony.CellBroadcasts.QUERY_COLUMNS,
-                   Telephony.CellBroadcasts.MESSAGE_DELETED + "=0", null,
+               return new CursorLoader(getActivity(), listUri,
+                   Telephony.CellBroadcasts.QUERY_COLUMNS, Telephony.CellBroadcasts.MESSAGE_DELETED + "=0", null,
                    Telephony.CellBroadcasts.DELIVERY_TIME + " DESC");
             }
-            return new CursorLoader(getActivity(), CellBroadcastContentProvider.CONTENT_URI,
+            return new CursorLoader(getActivity(), listUri,
                     Telephony.CellBroadcasts.QUERY_COLUMNS, null, null,
                     Telephony.CellBroadcasts.DELIVERY_TIME + " DESC");
         }
