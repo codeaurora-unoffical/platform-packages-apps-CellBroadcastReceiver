@@ -309,6 +309,14 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
             changeAudioManagerForWeaPresidential(); //change ringer mode & volume for President WEA
         }
 
+        if (getResources().getBoolean(
+                com.android.internal.R.bool.config_regional_wea_alert_reminder_interval)
+                && !intent.getBooleanExtra("isFirstTime", true)) {
+            mEnableVibrate = true;
+            mEnableAudio = true;
+            changeAudioManagerForWeaPresidential(); //change ringer mode & volume for reminder WEA
+        }
+
         if (mMessageBody != null && mEnableAudio) {
             if (mTts == null) {
                 mTts = new TextToSpeech(this, this);
