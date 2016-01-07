@@ -28,4 +28,6 @@
     <!-- CellBroadcast channel 50 enabled or not,default value is true -->
     <bool name="def_channel_50_enabled">true</bool>
     <bool name="config_regional_wea_show_presidential_alert">false</bool>
+    <bool name="config_regional_wea_rm_turn_on_notification">false</bool>
+    <bool name="config_regional_wea_rm_alert_reminder">false</bool>
 </resources>

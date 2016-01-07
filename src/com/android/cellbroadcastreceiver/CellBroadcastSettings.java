@@ -410,7 +410,18 @@ public class CellBroadcastSettings extends PreferenceActivity {
 
             TelephonyManager tm = (TelephonyManager) getActivity().getSystemService(
                     Context.TELEPHONY_SERVICE);
-
+            if (getResources().getBoolean(
+                        R.bool.config_regional_wea_rm_turn_on_notification)) {
+                if (findPreference(KEY_ENABLE_EMERGENCY_ALERTS) != null) {
+                    alertCategory.removePreference(findPreference(KEY_ENABLE_EMERGENCY_ALERTS));
+                }
+            }
+            if (getResources().getBoolean(
+                    R.bool.config_regional_wea_rm_alert_reminder)) {
+                if (findPreference(KEY_ALERT_REMINDER_INTERVAL) != null) {
+                    alertCategory.removePreference(findPreference(KEY_ALERT_REMINDER_INTERVAL));
+                }
+            }
             int[] subId = SubscriptionManager.getSubId(sPhoneId);
             String country = tm.getSimCountryIso(subId[0]);
             boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings)
