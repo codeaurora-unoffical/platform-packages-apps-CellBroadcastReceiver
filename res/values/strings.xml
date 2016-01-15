@@ -244,6 +244,12 @@
     <!-- Text for negative button in CMAS opt-out dialog. [CHAR LIMIT=25] -->
     <string name="cmas_opt_out_button_no">No</string>
 
+    <!-- Text for Cmas Extreme/Amber Alert Summary -->
+    <string name="cmas_extreme_alert_on_summary"></string>
+    <string name="cmas_extreme_alert_off_summary"></string>
+    <string name="cmas_amber_alert_on_summary"></string>
+    <string name="cmas_amber_alert_off_summary"></string>
+
     <!-- Entries listed in the ListPreference for allowed alert durations. [CHAR LIMIT=30] -->
     <string-array name="alert_sound_duration_entries">
       <item>2 seconds</item>

@@ -39,6 +39,7 @@ import android.provider.Settings;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.widget.Toast;
 import android.content.Intent;
 
 /**
@@ -307,22 +308,42 @@ public class CellBroadcastSettings extends PreferenceActivity {
                         editor.putBoolean(KEY_ENABLE_ETWS_TEST_ALERTS
                                 + sPhoneId, Boolean.valueOf((value)));
                     } else if (pref == enableCmasExtremeAlerts) {
-                        boolean isExtremeAlertChecked =
+                        boolean isCmasExtremeAlertChecked = Boolean.valueOf((value));
+                        boolean isSevereAlertChecked =
                                 ((Boolean) newValue).booleanValue();
                         if (enableCmasSevereAlerts != null) {
-                            enableCmasSevereAlerts.setEnabled(isExtremeAlertChecked);
+                            enableCmasSevereAlerts.setEnabled(isSevereAlertChecked);
                             enableCmasSevereAlerts.setChecked(false);
                             editor.putBoolean(KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS
                                     + sPhoneId, Boolean.valueOf((value)));
                         }
                         editor.putBoolean(KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS
-                                + sPhoneId, Boolean.valueOf((value)));
+                                + sPhoneId, isCmasExtremeAlertChecked);
+                        if (!pref.getContext().getString(
+                                R.string.cmas_extreme_alert_on_summary).isEmpty()) {
+                            if (isCmasExtremeAlertChecked)
+                                Toast.makeText(pref.getContext(),
+                                    R.string.cmas_extreme_alert_on_summary, Toast.LENGTH_SHORT).show();
+                            else
+                                Toast.makeText(pref.getContext(),
+                                    R.string.cmas_extreme_alert_off_summary, Toast.LENGTH_SHORT).show();
+                        }
                     } else if (pref == enableCmasSevereAlerts) {
                         editor.putBoolean(KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS
                                 + sPhoneId, Boolean.valueOf((value)));
                     } else if (pref == enableCmasAmberAlerts) {
+                        boolean isCmasAmberAlertsChecked = Boolean.valueOf((value));
                         editor.putBoolean(KEY_ENABLE_CMAS_AMBER_ALERTS
-                                + sPhoneId, Boolean.valueOf((value)));
+                                + sPhoneId, isCmasAmberAlertsChecked);
+                        if (!pref.getContext().getString(
+                                R.string.cmas_amber_alert_on_summary).isEmpty()) {
+                            if (isCmasAmberAlertsChecked)
+                                Toast.makeText(pref.getContext(),
+                                    R.string.cmas_amber_alert_on_summary, Toast.LENGTH_SHORT).show();
+                            else
+                                Toast.makeText(pref.getContext(),
+                                    R.string.cmas_amber_alert_off_summary, Toast.LENGTH_SHORT).show();
+                        }
                     } else if (pref == enableCmasTestAlerts) {
                         editor.putBoolean(KEY_ENABLE_CMAS_TEST_ALERTS
                                 + sPhoneId, Boolean.valueOf((value)));
