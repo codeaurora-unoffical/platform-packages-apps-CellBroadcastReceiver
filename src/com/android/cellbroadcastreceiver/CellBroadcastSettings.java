@@ -35,6 +35,7 @@ import android.telephony.TelephonyManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.SubscriptionInfo;
 import android.util.Log;
+import android.widget.Toast;
 import android.view.View;
 import android.widget.TabHost;
 import android.widget.TabHost.OnTabChangeListener;
@@ -271,6 +272,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
                         @Override
                         public boolean onPreferenceChange(Preference pref, Object newValue) {
                             int newVal = (((Boolean) newValue).booleanValue()) ? 1 : 0;
+                                String value = String.valueOf(newValue);
 
                             switch (pref.getKey()) {
                                 case KEY_ENABLE_EMERGENCY_ALERTS:
@@ -298,6 +300,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
                                                     newVal + "");
                                     break;
                                 case KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS:
+                                    boolean isCmasExtremeAlertChecked = Boolean.valueOf((value));
                                     SubscriptionManager
                                             .setSubscriptionProperty(mSir.getSubscriptionId(),
                                                     SubscriptionManager.CB_EXTREME_THREAT_ALERT,
@@ -314,6 +317,15 @@ public class CellBroadcastSettings extends PreferenceActivity {
                                         mSevereCheckBox.setEnabled(isExtremeAlertChecked);
                                         mSevereCheckBox.setChecked(false);
                                     }
+                                    if (isCmasExtremeAlertChecked) {
+                                        Toast.makeText(pref.getContext(),
+                                            R.string.cmas_extreme_alert_on_summary,
+                                            Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(pref.getContext(),
+                                            R.string.cmas_extreme_alert_off_summary,
+                                            Toast.LENGTH_SHORT).show();
+                                    }
                                     break;
                                 case KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS:
                                     SubscriptionManager
@@ -322,10 +334,20 @@ public class CellBroadcastSettings extends PreferenceActivity {
                                                     newVal + "");
                                     break;
                                 case KEY_ENABLE_CMAS_AMBER_ALERTS:
+                                    boolean isCmasAmberAlertsChecked = Boolean.valueOf((value));
                                     SubscriptionManager
                                             .setSubscriptionProperty(mSir.getSubscriptionId(),
                                                     SubscriptionManager.CB_AMBER_ALERT,
                                                     newVal + "");
+                                    if (isCmasAmberAlertsChecked) {
+                                        Toast.makeText(pref.getContext(),
+                                            R.string.cmas_amber_alert_on_summary,
+                                            Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(pref.getContext(),
+                                            R.string.cmas_amber_alert_off_summary,
+                                            Toast.LENGTH_SHORT).show();
+                                    }
                                     break;
                                 case KEY_ENABLE_CMAS_TEST_ALERTS:
                                     SubscriptionManager

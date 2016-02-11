@@ -144,7 +144,9 @@ public class CellBroadcastContentProvider extends ContentProvider {
 
             case CB_PRESIDENT_PIN:
                 SQLiteDatabase tempDB = mOpenHelper.getReadableDatabase();
-                return tempDB.rawQuery(genPresidentPin(projection, selection, sortOrder), null);
+                Cursor cs = tempDB.rawQuery(genPresidentPin(projection, selection, sortOrder), null);
+                cs.setNotificationUri(getContext().getContentResolver(), PRESIDENT_PIN_URI);
+                return cs;
 
             default:
                 Log.e(TAG, "Invalid query: " + uri);
