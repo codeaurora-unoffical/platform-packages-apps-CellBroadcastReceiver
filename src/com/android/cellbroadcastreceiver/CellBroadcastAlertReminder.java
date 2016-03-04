@@ -227,7 +227,7 @@ public class CellBroadcastAlertReminder extends Service {
 
         // remind user after 2 minutes or 15 minutes
         long triggerTime = SystemClock.elapsedRealtime() + (interval * 60000);
-        alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, sPlayReminderIntent);
+        alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, sPlayReminderIntent);
         return true;
     }
 
