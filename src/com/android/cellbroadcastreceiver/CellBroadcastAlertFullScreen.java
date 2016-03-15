@@ -394,6 +394,15 @@ public class CellBroadcastAlertFullScreen extends Activity {
         super.onPause();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (!getResources().getBoolean(
+                R.bool.config_regional_stop_alert_on_duration)) {
+            dismiss();
+        }
+    }
+
     /**
      * Stop animating warning icon and stop the {@link CellBroadcastAlertAudio}
      * service if necessary.

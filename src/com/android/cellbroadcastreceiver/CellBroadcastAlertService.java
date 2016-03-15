@@ -374,6 +374,8 @@ public class CellBroadcastAlertService extends Service {
                     " by user preference");
             return;
         }
+        if (getResources().getBoolean(R.bool.config_regional_disable_cb_message))
+            return;
 
         // If this is an ETWS message, then we want to include the body message to be a factor for
         // duplicate detection. We found that some Japanese carriers send ETWS messages
