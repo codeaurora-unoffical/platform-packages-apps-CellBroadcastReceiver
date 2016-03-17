@@ -150,7 +150,7 @@ public class CellBroadcastListActivity extends Activity {
             if(mDuplicateCheckDeletedRecords) {
                return new CursorLoader(getActivity(), listUri,
                    Telephony.CellBroadcasts.QUERY_COLUMNS, Telephony.CellBroadcasts.MESSAGE_DELETED + "=0", null,
-                   Telephony.CellBroadcasts.DELIVERY_TIME + " DESC");
+                   Telephony.CellBroadcasts.DELIVERY_TIME + " ASC");
             }
             return new CursorLoader(getActivity(), listUri,
                     Telephony.CellBroadcasts.QUERY_COLUMNS, null, null,
