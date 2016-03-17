@@ -472,9 +472,11 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
                 loge("Failed to play alert sound: " + ex);
             }
         }
-
-        // stop alert after the specified duration
-        mHandler.sendMessageDelayed(mHandler.obtainMessage(ALERT_SOUND_FINISHED), duration);
+        if (getResources().getBoolean(
+                    R.bool.config_regional_stop_alert_on_duration)) {
+            // stop alert after the specified duration
+            mHandler.sendMessageDelayed(mHandler.obtainMessage(ALERT_SOUND_FINISHED), duration);
+        }
         mState = STATE_ALERTING;
     }
 
