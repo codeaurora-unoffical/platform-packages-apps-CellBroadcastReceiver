@@ -82,9 +82,16 @@ public class CellBroadcastSettings extends PreferenceActivity {
     // Preference category for Brazil specific settings.
     public static final String KEY_CATEGORY_BRAZIL_SETTINGS = "category_brazil_settings";
 
+    // Preference category for India specific settings.
+    public static final String KEY_CATEGORY_INDIA_SETTINGS = "category_india_settings";
+
     // Preference key for whether to enable channel 50 notifications
     // Enabled by default for phones sold in Brazil, otherwise this setting may be hidden.
     public static final String KEY_ENABLE_CHANNEL_50_ALERTS = "enable_channel_50_alerts";
+
+    // Preference key for whether to enable channel 60 notifications
+    // Enabled by default for phones sold in India, otherwise this setting may be hidden.
+    public static final String KEY_ENABLE_CHANNEL_60_ALERTS = "enable_channel_60_alerts";
 
     // Preference key for initial opt-in/opt-out dialog.
     public static final String KEY_SHOW_CMAS_OPT_OUT_DIALOG = "show_cmas_opt_out_dialog";
@@ -94,6 +101,9 @@ public class CellBroadcastSettings extends PreferenceActivity {
 
     // Brazil country code
     private static final String COUNTRY_BRAZIL = "br";
+
+    // India country code
+    private static final String COUNTRY_INDIA = "in";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -123,6 +133,7 @@ public class CellBroadcastSettings extends PreferenceActivity {
         private TwoStatePreference mSpeechCheckBox;
         private TwoStatePreference mEtwsTestCheckBox;
         private TwoStatePreference mChannel50CheckBox;
+        private TwoStatePreference mChannel60CheckBox;
         private TwoStatePreference mCmasTestCheckBox;
         private PreferenceCategory mAlertCategory;
         private PreferenceCategory mETWSSettingCategory;
@@ -153,6 +164,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     findPreference(KEY_ENABLE_ETWS_TEST_ALERTS);
             mChannel50CheckBox = (TwoStatePreference)
                     findPreference(KEY_ENABLE_CHANNEL_50_ALERTS);
+            mChannel60CheckBox = (TwoStatePreference)
+                    findPreference(KEY_ENABLE_CHANNEL_60_ALERTS);
             mCmasTestCheckBox = (TwoStatePreference)
                     findPreference(KEY_ENABLE_CMAS_TEST_ALERTS);
             mAlertCategory = (PreferenceCategory)
@@ -244,22 +257,38 @@ public class CellBroadcastSettings extends PreferenceActivity {
             // We display channel 50 enable/disable menu if one of the followings is true
             // 1. The setting through resource overlay is set to true.
             // 2. At least one SIM inserted is Brazilian SIM.
-
-            boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings);
+            boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings) ||
+                    res.getBoolean(R.bool.show_india_settings);
 
             if (!enableChannel50Support) {
                 SubscriptionManager sm = SubscriptionManager.from(getContext());
                 for (int subId : sm.getActiveSubscriptionIdList()) {
-                    if (COUNTRY_BRAZIL.equals(tm.getSimCountryIso(subId))) {
+                    if (COUNTRY_BRAZIL.equals(tm.getSimCountryIso(subId)) ||
+                            COUNTRY_INDIA.equals(tm.getSimCountryIso(subId))) {
                         enableChannel50Support = true;
                         break;
                     }
                 }
             }
-
             if (!enableChannel50Support) {
                 preferenceScreen.removePreference(findPreference(KEY_CATEGORY_BRAZIL_SETTINGS));
             }
+
+            boolean enableChannel60Support = res.getBoolean(R.bool.show_india_settings);
+
+            if (!enableChannel60Support) {
+                SubscriptionManager sm = SubscriptionManager.from(getContext());
+                for (int subId : sm.getActiveSubscriptionIdList()) {
+                    if (COUNTRY_INDIA.equals(tm.getSimCountryIso(subId))) {
+                        enableChannel60Support = true;
+                        break;
+                    }
+                }
+            }
+            if (!enableChannel60Support) {
+                preferenceScreen.removePreference(findPreference(KEY_CATEGORY_INDIA_SETTINGS));
+            }
+
             if (!enableDevSettings) {
                 preferenceScreen.removePreference(findPreference(KEY_CATEGORY_DEV_SETTINGS));
             }
@@ -267,6 +296,11 @@ public class CellBroadcastSettings extends PreferenceActivity {
             if (mChannel50CheckBox != null) {
                 mChannel50CheckBox.setOnPreferenceChangeListener(startConfigServiceListener);
             }
+
+            if (mChannel60CheckBox != null) {
+                mChannel60CheckBox.setOnPreferenceChangeListener(startConfigServiceListener);
+            }
+
             if (mEtwsTestCheckBox != null) {
                 mEtwsTestCheckBox.setOnPreferenceChangeListener(startConfigServiceListener);
             }
