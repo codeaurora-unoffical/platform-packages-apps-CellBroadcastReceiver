@@ -234,6 +234,15 @@ public class CellBroadcastSettings extends PreferenceActivity {
                     findPreference(KEY_SHOW_CMAS_OPT_OUT_DIALOG);
             mAlertCategory = (PreferenceCategory)
                     findPreference(KEY_CATEGORY_ALERT_SETTINGS);
+
+            boolean disableToneVibrationPreference = getResources().getBoolean(
+                    R.bool.config_regional_disable_tone_vibration);
+            if (disableToneVibrationPreference) {
+                if (mAlertDuration != null)
+                    mAlertDuration.setEnabled(false);
+                if (mVibrateCheckBox != null)
+                    mVibrateCheckBox.setEnabled(false);
+            }
             if (getResources().getBoolean(
                         R.bool.config_regional_wea_alert_tone_enable)) {
                 mEnableAlertsTone =
