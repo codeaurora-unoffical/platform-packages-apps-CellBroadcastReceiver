@@ -165,7 +165,8 @@ public class CellBroadcastAlertService extends Service {
                         mSerialNumber == other.mSerialNumber &&
                         mLocation.equals(other.mLocation) &&
                         mBodyHash == other.mBodyHash &&
-                        mMessageBody.equals(other.mMessageBody));
+                        ((mMessageBody == null) ? (other.mMessageBody == null)
+                        : (mMessageBody.equals(other.mMessageBody))));
             }
             return false;
         }
