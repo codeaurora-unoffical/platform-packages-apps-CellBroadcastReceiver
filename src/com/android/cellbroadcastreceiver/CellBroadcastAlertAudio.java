@@ -331,9 +331,12 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
                 break;
         }
 
-        if (getResources().getBoolean(
+        if ((getResources().getBoolean(
                 R.bool.config_regional_presidential_wea_with_tone_vibrate)
-                && intent.getBooleanExtra(ALERT_AUDIO_PRESIDENT_TONE_VIBRATE_EXTRA, false)) {
+                && intent.getBooleanExtra(
+                ALERT_AUDIO_PRESIDENT_TONE_VIBRATE_EXTRA, false)) ||
+                getResources().getBoolean(
+                R.bool.config_regional_always_notify_with_tone_vibrate)) {
             mEnableVibrate = true;
             mEnableAudio = true;
             changeAudioManagerForWeaPresidential(); //change ringer mode & volume for President WEA
@@ -402,16 +405,17 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
             return;
         }
 
-        if (mAudioManager.getRingerMode() != mOldRingerMode) {
-            mAudioManager.setRingerMode(mOldRingerMode);
-            if (DBG) log("AudioManager restore RingerMode to " + mOldRingerMode);
-        }
-
         if (mAudioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION) !=
             mOldStreamVolume) {
             mAudioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, mOldStreamVolume, 0);
             if (DBG) log("AudioManager restore stream volume to " + mOldStreamVolume);
         }
+
+        if (mAudioManager.getRingerMode() != mOldRingerMode) {
+            mAudioManager.setRingerMode(mOldRingerMode);
+            if (DBG) log("AudioManager restore RingerMode to " + mOldRingerMode);
+        }
+
 
         mAudioManagerIsChanged = false;
     }
@@ -431,7 +435,11 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
 
         // Start the vibration first.
         if (mEnableVibrate) {
-            mVibrator.vibrate(sVibratePattern, -1);
+            if (getResources().getBoolean(R.bool.config_regional_always_notify_with_tone_vibrate)) {
+                mVibrator.vibrate(sVibratePattern, 0);
+            } else {
+                mVibrator.vibrate(sVibratePattern, -1);
+            }
         }
 
         if (mEnableAudio) {
@@ -543,8 +551,10 @@ public class CellBroadcastAlertAudio extends Service implements TextToSpeech.OnI
 
             // Stop vibrator
             mVibrator.cancel();
-            if (getResources().getBoolean(
-                    R.bool.config_regional_presidential_wea_with_tone_vibrate)) {
+            if ((getResources().getBoolean(
+                    R.bool.config_regional_presidential_wea_with_tone_vibrate)) ||
+                    getResources().getBoolean(
+                    R.bool.config_regional_always_notify_with_tone_vibrate)) {
                 restoreAudioManagerIfChanged(); //restore user setting after presidental WEA
             }
         } else if (mState == STATE_SPEAKING && mTts != null) {
