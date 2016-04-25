@@ -39,4 +39,5 @@
     <bool name="config_regional_disable_tone_vibration">false</bool>
     <!-- Don't receive any cellbroadcast messages -->
     <bool name="config_regional_disable_cb_message">false</bool>
+    <bool name="config_regional_always_notify_with_tone_vibrate">false</bool>
 </resources>

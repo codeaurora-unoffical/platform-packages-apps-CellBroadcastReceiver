@@ -165,7 +165,8 @@ public class CellBroadcastAlertService extends Service {
                         mSerialNumber == other.mSerialNumber &&
                         mLocation.equals(other.mLocation) &&
                         mBodyHash == other.mBodyHash &&
-                        mMessageBody.equals(other.mMessageBody));
+                        ((mMessageBody == null) ? (other.mMessageBody == null)
+                        : (mMessageBody.equals(other.mMessageBody))));
             }
             return false;
         }
@@ -457,6 +458,10 @@ public class CellBroadcastAlertService extends Service {
         if (CellBroadcastConfigService.isEmergencyAlertMessage(cbm)) {
             // start alert sound / vibration / TTS and display full-screen alert
             openEmergencyAlertNotification(cbm);
+            if (!getResources().getBoolean(
+                    R.bool.config_regional_stop_alert_on_duration)) {
+                addToNotificationBar(cbm);
+            }
         } else {
             // add notification to the bar
             addToNotificationBar(cbm);
