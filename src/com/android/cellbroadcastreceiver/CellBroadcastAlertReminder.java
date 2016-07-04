@@ -239,23 +239,25 @@ public class CellBroadcastAlertReminder extends Service {
             Bundle bundle = new Bundle();
             bundle.putParcelable("CellBroadcastMessage", message);
             // if it the first time.
-            String prefStr = prefs.getString("next_time_reminder", null);
+            String prefStr = prefs.getString("reminder_times", null);
             int interval;
+            int counter;
             if (firstTime) {
                 interval = 1;
-                editor.putString("next_time_reminder", "3");
+                editor.putString("reminder_times", "2");
             } else {
-                prefStr = prefs.getString("next_time_reminder", null);
+                prefStr = prefs.getString("reminder_times", null);
                 try {
-                    interval = Integer.valueOf(prefStr);
+                    counter = Integer.valueOf(prefStr);
+                    interval = 2;
                 } catch (NumberFormatException ignored) {
-                    loge("invalid alert reminder interval preference: " + prefStr);
+                    loge("invalid alert reminder times: " + prefStr);
                     return false;
                 }
-                if (interval > 5) {
+                if (counter > 3) {
                     return false;
                 } else {
-                    editor.putString("next_time_reminder", interval + 2 + "");
+                    editor.putString("reminder_times", counter + 1 + "");
                 }
             }
             editor.commit();
