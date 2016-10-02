@@ -182,11 +182,14 @@ public class CellBroadcastContentProvider extends ContentProvider {
         String strSel = "SELECT * FROM (SELECT ";
         String strPresidentCon = " WHERE (" + selection + ") AND " + strClass
                 + " = 0 ORDER BY " + strOrder;
-        String strgenCon = " WHERE (" + selection + ") AND " + strClass
+        String strCmasCon = " WHERE (" + selection + ") AND " + strClass
                 + " <> 0 ORDER BY " + strOrder;
+        String strGenCon = " WHERE (" + selection + ") AND " + strClass
+                + " is null ORDER BY " + strOrder;
         String strPresident = strSel + strProject + " FROM " + strTab + strPresidentCon +") AS A";
-        String strGen = strSel + strProject + " FROM " + strTab + strgenCon +") AS B";
-        String strSQL = strPresident + " UNION ALL " + strGen;
+        String strCmas = strSel + strProject + " FROM " + strTab + strCmasCon +") AS B";
+        String strGen = strSel + strProject + " FROM " + strTab + strGenCon +") AS C";
+        String strSQL = strPresident + " UNION ALL " + strCmas + " UNION ALL " + strGen;
         return strSQL;
     }
     /**
