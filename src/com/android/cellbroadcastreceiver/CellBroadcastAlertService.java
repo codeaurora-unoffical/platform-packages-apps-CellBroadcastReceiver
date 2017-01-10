@@ -386,6 +386,12 @@ public class CellBroadcastAlertService extends Service {
         }
 
         final CellBroadcastMessage cbm = new CellBroadcastMessage(message);
+        int subId = intent.getExtras().getInt(PhoneConstants.SUBSCRIPTION_KEY);
+        if (SubscriptionManager.isValidSubscriptionId(subId)) {
+            cbm.setSubId(subId);
+        } else {
+            Log.e(TAG, "Invalid subscription id");
+        }
 
         if (!isMessageEnabledByUser(cbm)) {
             Log.d(TAG, "ignoring alert of type " + cbm.getServiceCategory() +
@@ -419,11 +425,6 @@ public class CellBroadcastAlertService extends Service {
             }
         }
 
-        int subId = intent.getIntExtra(PhoneConstants.SUBSCRIPTION_KEY,
-                SubscriptionManager.getDefaultSmsSubscriptionId());
-        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
-            subId = SubscriptionManager.getDefaultSubscriptionId();
-        }
         boolean carrierDisableDupDetection = false;
         CarrierConfigManager configManager =
                 (CarrierConfigManager) getSystemService(Context.CARRIER_CONFIG_SERVICE);
