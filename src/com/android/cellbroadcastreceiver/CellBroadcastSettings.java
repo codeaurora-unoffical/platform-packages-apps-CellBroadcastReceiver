@@ -620,6 +620,8 @@ public class CellBroadcastSettings extends PreferenceActivity {
                //Hence the option should be greyed out.
                mPresidentialCheckBox.setChecked(true);
                mPresidentialCheckBox.setEnabled(false);
+           } else {
+               mAlertCategory.removePreference(mPresidentialCheckBox);
            }
 
             if (mExtremeCheckBox != null) {
