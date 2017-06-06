@@ -37,6 +37,7 @@ import android.preference.PreferenceManager;
 import android.provider.Telephony;
 import android.telephony.CarrierConfigManager;
 import android.telephony.CellBroadcastMessage;
+import android.telephony.TelephonyManager;
 import android.telephony.SmsCbCmasInfo;
 import android.telephony.SmsCbEtwsInfo;
 import android.telephony.SmsCbLocation;
@@ -88,6 +89,15 @@ public class CellBroadcastAlertService extends Service {
      * treated as a duplicate.
      */
     private static final long DEFAULT_EXPIRATION_TIME = DAY_IN_MILLIS;
+
+    /** Channel 50 Cell Broadcast. */
+    static final int CB_CHANNEL_50 = 50;
+
+    /** Channel 60 Cell Broadcast. */
+    static final int CB_CHANNEL_60 = 60;
+
+    private static final String COUNTRY_BRAZIL = "br";
+    private static final String COUNTRY_INDIA = "in";
 
     /**
      *  Container for service category, serial number, location, body hash code, and ETWS primary/
@@ -331,6 +341,40 @@ public class CellBroadcastAlertService extends Service {
     }
 
     /**
+     * Send broadcast twice, once for apps that have PRIVILEGED permission and
+     * once for those that have the runtime one.
+     * @param message the message to broadcast
+     */
+    private void broadcastAreaInfoReceivedAction(CellBroadcastMessage message) {
+        Intent intent = new Intent(CB_AREA_INFO_RECEIVED_ACTION);
+
+        intent.putExtra("message", message);
+        sendBroadcastAsUser(intent, UserHandle.ALL,
+                android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+        sendBroadcastAsUser(intent, UserHandle.ALL,
+                android.Manifest.permission.READ_PHONE_STATE);
+    }
+
+    /**
+     * Get preference setting for channel 60
+     * @param message the message to check
+     * @return true if channel 60 preference is set; false otherwise
+     */
+    private boolean getChannel60Preference(CellBroadcastMessage message) {
+        String country = TelephonyManager.getDefault().
+                getSimCountryIso(message.getSubId());
+
+        boolean enable60Channel = SubscriptionManager.
+                getResourcesForSubId(getApplicationContext(), message.
+                        getSubId()).getBoolean(R.bool.show_india_settings) ||
+                COUNTRY_INDIA.equals(country);
+
+        return PreferenceManager.getDefaultSharedPreferences(this).
+                getBoolean(CellBroadcastSettings.
+                        KEY_ENABLE_CHANNEL_60_ALERTS, enable60Channel);
+    }
+
+    /**
      * Filter out broadcasts on the test channels that the user has not enabled,
      * and types of notifications that the user is not interested in receiving.
      * This allows us to enable an entire range of message identifiers in the
@@ -397,18 +441,19 @@ public class CellBroadcastAlertService extends Service {
             }
         }
 
-        if (message.getServiceCategory() == 50) {
-            // save latest area info broadcast for Settings display and send as broadcast
+        int serviceCategory = message.getServiceCategory();
+        if (serviceCategory == CB_CHANNEL_50) {
+            String country = TelephonyManager.getDefault().
+                    getSimCountryIso(message.getSubId());
+            // save latest area info broadcast for Settings display and send as
+            // broadcast
             CellBroadcastReceiverApp.setLatestAreaInfo(message);
-            Intent intent = new Intent(CB_AREA_INFO_RECEIVED_ACTION);
-            intent.putExtra(EXTRA_MESSAGE, message);
-            // Send broadcast twice, once for apps that have PRIVILEGED permission and once
-            // for those that have the runtime one
-            sendBroadcastAsUser(intent, UserHandle.ALL,
-                    android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
-            sendBroadcastAsUser(intent, UserHandle.ALL,
-                    android.Manifest.permission.READ_PHONE_STATE);
-            return false;   // area info broadcasts are displayed in Settings status screen
+            broadcastAreaInfoReceivedAction(message);
+            return !(COUNTRY_BRAZIL.equals(country) ||
+                    COUNTRY_INDIA.equals(country));
+        } else if (serviceCategory == CB_CHANNEL_60) {
+            broadcastAreaInfoReceivedAction(message);
+            return getChannel60Preference(message);
         }
 
         return true;    // other broadcast messages are always enabled
@@ -536,14 +581,7 @@ public class CellBroadcastAlertService extends Service {
         CharSequence channelName = context.getText(channelTitleId);
         String messageBody = message.getMessageBody();
         final NotificationManager notificationManager = NotificationManager.from(context);
-        /**
-         * Creates the notification channel and registers it with NotificationManager. If a channel
-         * with the same ID is already registered, NotificationManager will ignore this call.
-         */
-        notificationManager.createNotificationChannel(new NotificationChannel(
-                NOTIFICATION_CHANNEL_BROADCAST_MESSAGES,
-                context.getString(R.string.notification_channel_broadcast_messages),
-                NotificationManager.IMPORTANCE_LOW));
+        createNotificationChannels(context);
 
         // Create intent to show the new messages when user selects the notification.
         Intent intent;
@@ -598,6 +636,18 @@ public class CellBroadcastAlertService extends Service {
         }
 
         notificationManager.notify(NOTIFICATION_ID, builder.build());
+    }
+
+    /**
+     * Creates the notification channel and registers it with NotificationManager. If a channel
+     * with the same ID is already registered, NotificationManager will ignore this call.
+     */
+    static void createNotificationChannels(Context context) {
+        NotificationManager.from(context).createNotificationChannel(
+                new NotificationChannel(
+                NOTIFICATION_CHANNEL_BROADCAST_MESSAGES,
+                context.getString(R.string.notification_channel_broadcast_messages),
+                NotificationManager.IMPORTANCE_LOW));
     }
 
     static Intent createDisplayMessageIntent(Context context, Class intentClass,
