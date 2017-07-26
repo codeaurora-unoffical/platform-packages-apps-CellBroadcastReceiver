@@ -52,11 +52,6 @@ public class CellBroadcastConfigService extends IntentService {
 
     static final String ACTION_ENABLE_CHANNELS = "ACTION_ENABLE_CHANNELS";
 
-    private static final String COUNTRY_TAIWAN = "tw";
-    private static final String COUNTRY_ISRAEL = "ir";
-    private static final String COUNTRY_BRAZIL = "br";
-    private static final String COUNTRY_INDIA = "in";
-
     public CellBroadcastConfigService() {
         super(TAG);          // use class name for worker thread name
     }
@@ -166,31 +161,6 @@ public class CellBroadcastConfigService extends IntentService {
                 enableEmergencyAlerts &&
                 prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CMAS_TEST_ALERTS, false);
 
-        TelephonyManager tm = (TelephonyManager) getSystemService(
-                Context.TELEPHONY_SERVICE);
-        String country = tm.getSimCountryIso(subId);
-
-        boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings) ||
-                COUNTRY_BRAZIL.equals(country) ||
-                res.getBoolean(R.bool.show_india_settings) ||
-                COUNTRY_INDIA.equals(country);
-
-        boolean enableChannel50Alerts = enableChannel50Support &&
-                prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_50_ALERTS, true);
-
-        boolean enableChannel60Support = res.getBoolean(R.bool.show_india_settings) ||
-                COUNTRY_INDIA.equals(country);
-
-        boolean enableChannel60Alerts = enableChannel60Support &&
-                prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_CHANNEL_60_ALERTS, true);
-
-
-        // Current Israel requires enable certain CMAS messages ids.
-        boolean supportIsraelPwsAlerts = (COUNTRY_ISRAEL.equals(tm.getSimCountryIso(subId))
-                || COUNTRY_ISRAEL.equals(tm.getNetworkCountryIso(subId)));
-
-        boolean supportTaiwanPwsAlerts = (COUNTRY_TAIWAN.equals(tm.getSimCountryIso(subId))
-                || COUNTRY_TAIWAN.equals(tm.getNetworkCountryIso(subId)));
         boolean enableAreaUpdateInfoAlerts = Resources.getSystem().getBoolean(
                 com.android.internal.R.bool.config_showAreaUpdateInfoSettings)
                 && prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_AREA_UPDATE_INFO_ALERTS,
@@ -206,10 +176,6 @@ public class CellBroadcastConfigService extends IntentService {
             log("forceDisableEtwsCmasTest = " + forceDisableEtwsCmasTest);
             log("enableEtwsTestAlerts = " + enableEtwsTestAlerts);
             log("enableCmasTestAlerts = " + enableCmasTestAlerts);
-            log("enableChannel50Alerts = " + enableChannel50Alerts);
-            log("enableChannel60Alerts = " + enableChannel60Alerts);
-            log("supportIsraelPwsAlerts = " + supportIsraelPwsAlerts);
-            log("supportTaiwanPwsAlerts = " + supportTaiwanPwsAlerts);
             log("enableAreaUpdateInfoAlerts = " + enableAreaUpdateInfoAlerts);
         }
 
@@ -329,19 +295,6 @@ public class CellBroadcastConfigService extends IntentService {
                 SmsManager.CELL_BROADCAST_RAN_TYPE_GSM,
                 SmsCbConstants.MESSAGE_ID_CMAS_ALERT_REQUIRED_MONTHLY_TEST_LANGUAGE,
                 SmsCbConstants.MESSAGE_ID_CMAS_ALERT_OPERATOR_DEFINED_USE_LANGUAGE);
-
-
-        // Enable/Disable channel 50 messages for Brazil/India.
-        setCellBroadcastRange(manager, enableChannel50Alerts,
-                SmsManager.CELL_BROADCAST_RAN_TYPE_GSM,
-                SmsCbConstants.MESSAGE_ID_GSMA_ALLOCATED_CHANNEL_50,
-                SmsCbConstants.MESSAGE_ID_GSMA_ALLOCATED_CHANNEL_50);
-
-        // Enable/Disable channel 60 messages for India.
-        setCellBroadcastRange(manager, enableChannel60Alerts,
-                SmsManager.CELL_BROADCAST_RAN_TYPE_GSM,
-                SmsCbConstants.MESSAGE_ID_GSMA_ALLOCATED_CHANNEL_60,
-                SmsCbConstants.MESSAGE_ID_GSMA_ALLOCATED_CHANNEL_60);
 
         // Enable/Disable additional channels based on carrier specific requirement.
         ArrayList<CellBroadcastChannelRange> ranges = CellBroadcastChannelManager
