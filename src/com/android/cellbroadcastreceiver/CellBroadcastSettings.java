@@ -83,15 +83,6 @@ public class CellBroadcastSettings extends Activity {
     // Whether to display CMAS monthly test messages (default is disabled).
     public static final String KEY_ENABLE_CMAS_TEST_ALERTS = "enable_cmas_test_alerts";
 
-    // Preference category for Brazil specific settings.
-    public static final String KEY_CATEGORY_BRAZIL_SETTINGS = "category_brazil_settings";
-
-    // Preference category for India specific settings.
-    public static final String KEY_CATEGORY_INDIA_SETTINGS = "category_india_settings";
-
-    // Preference key for whether to enable channel 50 notifications
-    // Enabled by default for phones sold in Brazil, otherwise this setting may be hidden.
-    public static final String KEY_ENABLE_CHANNEL_50_ALERTS = "enable_channel_50_alerts";
     // Preference key for whether to enable area update information notifications
     // Enabled by default for phones sold in Brazil and India, otherwise this setting may be hidden.
     public static final String KEY_ENABLE_AREA_UPDATE_INFO_ALERTS =
@@ -144,8 +135,6 @@ public class CellBroadcastSettings extends Activity {
         private TwoStatePreference mSpeechCheckBox;
         private TwoStatePreference mFullVolumeCheckBox;
         private TwoStatePreference mEtwsTestCheckBox;
-        private TwoStatePreference mChannel50CheckBox;
-        private TwoStatePreference mChannel60CheckBox;
         private TwoStatePreference mAreaUpdateInfoCheckBox;
         private TwoStatePreference mCmasTestCheckBox;
         private Preference mAlertHistory;
@@ -177,10 +166,6 @@ public class CellBroadcastSettings extends Activity {
                     findPreference(KEY_USE_FULL_VOLUME);
             mEtwsTestCheckBox = (TwoStatePreference)
                     findPreference(KEY_ENABLE_ETWS_TEST_ALERTS);
-            mChannel50CheckBox = (TwoStatePreference)
-                    findPreference(KEY_ENABLE_CHANNEL_50_ALERTS);
-            mChannel60CheckBox = (TwoStatePreference)
-                    findPreference(KEY_ENABLE_CHANNEL_60_ALERTS);
             mAreaUpdateInfoCheckBox = (TwoStatePreference)
                     findPreference(KEY_ENABLE_AREA_UPDATE_INFO_ALERTS);
             mCmasTestCheckBox = (TwoStatePreference)
@@ -273,51 +258,6 @@ public class CellBroadcastSettings extends Activity {
                 mAlertCategory.removePreference(mAmberCheckBox);
             }
 
-            TelephonyManager tm = (TelephonyManager) getContext().getSystemService(
-                    Context.TELEPHONY_SERVICE);
-
-            // We display channel 50 enable/disable menu if one of the followings is true
-            // 1. The setting through resource overlay is set to true.
-            // 2. At least one SIM inserted is Brazilian SIM.
-            boolean enableChannel50Support = res.getBoolean(R.bool.show_brazil_settings) ||
-                    res.getBoolean(R.bool.show_india_settings);
-
-            if (!enableChannel50Support) {
-                SubscriptionManager sm = SubscriptionManager.from(getContext());
-                for (int subId : sm.getActiveSubscriptionIdList()) {
-                    if (COUNTRY_BRAZIL.equals(tm.getSimCountryIso(subId)) ||
-                            COUNTRY_INDIA.equals(tm.getSimCountryIso(subId))) {
-                        enableChannel50Support = true;
-                        break;
-                    }
-                }
-            }
-            if (!enableChannel50Support) {
-                preferenceScreen.removePreference(findPreference(KEY_CATEGORY_BRAZIL_SETTINGS));
-            }
-
-            boolean enableChannel60Support = res.getBoolean(R.bool.show_india_settings);
-
-            if (!enableChannel60Support) {
-                SubscriptionManager sm = SubscriptionManager.from(getContext());
-                for (int subId : sm.getActiveSubscriptionIdList()) {
-                    if (COUNTRY_INDIA.equals(tm.getSimCountryIso(subId))) {
-                        enableChannel60Support = true;
-                        break;
-                    }
-                }
-            }
-            if (!enableChannel60Support) {
-                preferenceScreen.removePreference(findPreference(KEY_CATEGORY_INDIA_SETTINGS));
-            }
-
-            if (!enableDevSettings) {
-                preferenceScreen.removePreference(findPreference(KEY_CATEGORY_DEV_SETTINGS));
-            }
-
-            if (mChannel50CheckBox != null) {
-                mChannel50CheckBox.setOnPreferenceChangeListener(startConfigServiceListener);
-            }
             if (!Resources.getSystem().getBoolean(
                     com.android.internal.R.bool.config_showAreaUpdateInfoSettings)) {
                 mAlertCategory.removePreference(mAreaUpdateInfoCheckBox);
@@ -325,10 +265,6 @@ public class CellBroadcastSettings extends Activity {
 
             if (mAreaUpdateInfoCheckBox != null) {
                 mAreaUpdateInfoCheckBox.setOnPreferenceChangeListener(startConfigServiceListener);
-            }
-
-            if (mChannel60CheckBox != null) {
-                mChannel60CheckBox.setOnPreferenceChangeListener(startConfigServiceListener);
             }
 
             if (mEtwsTestCheckBox != null) {

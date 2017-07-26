@@ -139,10 +139,6 @@
     <string name="category_brazil_settings_title">Settings for Brazil</string>
     <!-- Preference category title for India settings. [CHAR LIMIT=50] -->
     <string name="category_india_settings_title">Settings for India</string>
-    <!-- Preference title for enable channel 50 alerts (Brazil only). [CHAR LIMIT=30] -->
-    <string name="enable_channel_50_alerts_title">Show channel 50 broadcasts</string>
-    <!-- Preference summary for enable channel 50 alerts (Brazil only). [CHAR LIMIT=100] -->
-    <string name="enable_channel_50_alerts_summary">Channel 50 is used in Brazil for area update information</string>
     <!-- Preference title for enable channel 60 alerts. [CHAR LIMIT=30] -->
     <string name="enable_channel_60_alerts_title">Show channel 60 broadcasts</string>
     <!-- Preference summary for enable channel 60 alerts. [CHAR LIMIT=100] -->
@@ -152,6 +148,10 @@
     <!-- Preference summary for use full volume option. [CHAR LIMIT=100] -->
     <string name="use_full_volume_summary">Ignore other volume and Do Not Disturb preferences</string>
 
+    <!-- Preference title for enable area update information broadcasts. [CHAR LIMIT=50] -->
+    <string name="enable_area_update_info_alerts_title">Area update broadcasts</string>
+    <!-- Preference summary for enable area update information broadcasts. [CHAR LIMIT=100] -->
+    <string name="enable_area_update_info_alerts_summary">Show update information in SIM status</string>
 
     <!-- Preference category title for developer settings. [CHAR LIMIT=50] -->
     <string name="category_dev_settings_title">Developer options</string>

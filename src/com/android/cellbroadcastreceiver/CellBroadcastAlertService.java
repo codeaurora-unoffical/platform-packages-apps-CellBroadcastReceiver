@@ -412,7 +412,7 @@ public class CellBroadcastAlertService extends Service {
         return PreferenceManager.getDefaultSharedPreferences(this).
                 getBoolean(CellBroadcastSettings.
                         KEY_ENABLE_CHANNEL_60_ALERTS, enable60Channel);
-     }
+    }
 
     /**
      * Check if the device is currently on roaming.
@@ -545,21 +545,6 @@ public class CellBroadcastAlertService extends Service {
                 default:
                     return true;    // presidential-level CMAS alerts are always enabled
             }
-        }
-
-        int serviceCategory = message.getServiceCategory();
-        if (serviceCategory == CB_CHANNEL_50) {
-            String country = TelephonyManager.getDefault().
-                    getSimCountryIso(message.getSubId());
-            // save latest area info broadcast for Settings display and send as
-            // broadcast
-            CellBroadcastReceiverApp.setLatestAreaInfo(message);
-            broadcastAreaInfoReceivedAction(message);
-            return !(COUNTRY_BRAZIL.equals(country) ||
-                    COUNTRY_INDIA.equals(country));
-        } else if (serviceCategory == CB_CHANNEL_60) {
-            broadcastAreaInfoReceivedAction(message);
-            return getChannel60Preference(message);
         }
 
         return true;    // other broadcast messages are always enabled
