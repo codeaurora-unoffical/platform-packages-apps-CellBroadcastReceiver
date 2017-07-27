@@ -494,50 +494,31 @@ public class CellBroadcastAlertService extends Service {
         Log.d(TAG, "message ID = " + newCmasId);
 
         long nowTime = SystemClock.elapsedRealtime();
-        // Check if the identical message arrives again
-        if (sMessagesMap.get(newCmasId) != null) {
-            // And if the previous one has not expired yet, treat it as a duplicate message.
-            long previousTime = sMessagesMap.get(newCmasId);
-            long expirationTime = getDuplicateExpirationTime(subId);
-            if (nowTime - previousTime < expirationTime) {
-                Log.d(TAG, "ignoring the duplicate alert " + newCmasId + ", nowTime=" + nowTime
-                        + ", previous=" + previousTime + ", expiration=" + expirationTime);
-                return;
+        if (mUseDupDetection && !carrierDisableDupDetection) {
+            // Check if the identical message arrives again
+            if (sMessagesMap.get(newCmasId) != null) {
+                // And if the previous one has not expired yet, treat it as a duplicate message.
+                long previousTime = sMessagesMap.get(newCmasId);
+                long expirationTime = getDuplicateExpirationTime(subId);
+                if (nowTime - previousTime < expirationTime) {
+                    Log.d(TAG, "ignoring the duplicate alert " + newCmasId + ", nowTime=" + nowTime
+                            + ", previous=" + previousTime + ", expiration=" + expirationTime);
+                    return;
+                }
+                // otherwise, we don't treat it as a duplicate and will show the same message again.
+                Log.d(TAG, "The same message shown up " + (nowTime - previousTime)
+                        + " milliseconds ago. Not a duplicate.");
+            } else if (sMessagesMap.size() >= MAX_MESSAGE_ID_SIZE){
+                // If we reach the maximum, remove the first inserted message key.
+                MessageServiceCategoryAndScope oldestCmasId = sMessagesMap.keySet().
+                        iterator().next();
+                Log.d(TAG, "message ID limit reached, removing oldest message ID " + oldestCmasId);
+                sMessagesMap.remove(oldestCmasId);
+            } else {
+                Log.d(TAG, "New message. Not a duplicate. Map size = " + sMessagesMap.size());
             }
-            // otherwise, we don't treat it as a duplicate and will show the same message again.
-            Log.d(TAG, "The same message shown up " + (nowTime - previousTime)
-                    + " milliseconds ago. Not a duplicate.");
-        } else if (sMessagesMap.size() >= MAX_MESSAGE_ID_SIZE){
-            // If we reach the maximum, remove the first inserted message key.
-            MessageServiceCategoryAndScope oldestCmasId = sMessagesMap.keySet().iterator().next();
-            Log.d(TAG, "message ID limit reached, removing oldest message ID " + oldestCmasId);
-            sMessagesMap.remove(oldestCmasId);
-        } else {
-            Log.d(TAG, "New message. Not a duplicate. Map size = " + sMessagesMap.size());
         }
 
-        if (mUseDupDetection && !carrierDisableDupDetection) {
-            // Add the new message ID to the list. It's okay if this is a duplicate message ID,
-            // because the list is only used for removing old message IDs from the hash set.
-            if (sCmasIdList.size() < MAX_MESSAGE_ID_SIZE) {
-                sCmasIdList.add(newCmasId);
-            } else {
-                // Get oldest message ID from the list and replace with the new message ID.
-                MessageServiceCategoryAndScope oldestCmasId = sCmasIdList.get(sCmasIdListIndex);
-                sCmasIdList.set(sCmasIdListIndex, newCmasId);
-                Log.d(TAG, "message ID limit reached, removing oldest message ID " + oldestCmasId);
-                // Remove oldest message ID from the set.
-                sCmasIdSet.remove(oldestCmasId);
-                if (++sCmasIdListIndex >= MAX_MESSAGE_ID_SIZE) {
-                    sCmasIdListIndex = 0;
-                }
-            }
-            // Set.add() returns false if message ID has already been added
-            if (!sCmasIdSet.add(newCmasId)) {
-                Log.d(TAG, "ignoring duplicate alert with " + newCmasId);
-                return;
-            }
-        }
         sMessagesMap.put(newCmasId, nowTime);
 
         final Intent alertIntent = new Intent(SHOW_NEW_ALERT_ACTION);
