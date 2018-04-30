@@ -203,8 +203,6 @@ public class CellBroadcastSettings extends Activity {
             mTestCheckBox = (TwoStatePreference)
                     findPreference(KEY_ENABLE_TEST_ALERTS);
             mAlertHistory = findPreference(KEY_EMERGENCY_ALERT_HISTORY);
-            mAlertPreferencesCategory = (PreferenceCategory)
-                    findPreference(KEY_CATEGORY_ALERT_PREFERENCES);
             mDevSettingCategory = (PreferenceCategory)
                     findPreference(KEY_CATEGORY_DEV_SETTINGS);
 
@@ -229,6 +227,8 @@ public class CellBroadcastSettings extends Activity {
                         findPreference(KEY_CATEGORY_ALERT_PREFERENCES);
                 watchScreen.removePreference(mReminderInterval);
             } else {
+                mAlertPreferencesCategory = (PreferenceCategory)
+                        findPreference(KEY_CATEGORY_ALERT_PREFERENCES);
                 mAlertCategory = (PreferenceCategory)
                         findPreference(KEY_CATEGORY_EMERGENCY_ALERTS);
             }
@@ -316,8 +316,7 @@ public class CellBroadcastSettings extends Activity {
                 }
             }
 
-            if (!Resources.getSystem().getBoolean(
-                    com.android.internal.R.bool.config_showAreaUpdateInfoSettings)) {
+            if (!isAreaUpdateInfoSettingsEnabled(getContext())) {
                 if (mAlertCategory != null) {
                     if (mAreaUpdateInfoCheckBox != null) {
                         mAlertCategory.removePreference(mAreaUpdateInfoCheckBox);
@@ -469,6 +468,19 @@ public class CellBroadcastSettings extends Activity {
             }
         }
     }
+
+     public static boolean isAreaUpdateInfoSettingsEnabled(Context context) {
+         int subId = SubscriptionManager.getDefaultSmsSubscriptionId();
+         if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+             subId = SubscriptionManager.getDefaultSubscriptionId();
+         }
+         Resources res = SubscriptionManager.getResourcesForSubId( context, subId);
+         Log.d(TAG, "subId: " + subId);
+         boolean value = res.getBoolean(R.bool.config_showAreaUpdateInfoSettings);
+         Log.d(TAG, "value: " + value);
+         return value;
+     }
+
 
     public static boolean isFeatureEnabled(Context context, String feature, boolean defaultValue) {
         int subId = SubscriptionManager.getDefaultSmsSubscriptionId();
