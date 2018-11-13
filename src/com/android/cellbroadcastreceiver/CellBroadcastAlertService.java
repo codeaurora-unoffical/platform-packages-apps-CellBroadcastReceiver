@@ -45,6 +45,7 @@ import android.telephony.SmsCbEtwsInfo;
 import android.telephony.SmsCbLocation;
 import android.telephony.SmsCbMessage;
 import android.telephony.SubscriptionManager;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.cellbroadcastreceiver.CellBroadcastChannelManager.CellBroadcastChannelRange;
@@ -229,6 +230,38 @@ public class CellBroadcastAlertService extends Service {
         return time;
     }
 
+    /**
+     * Check if we should display the received cell broadcast message.
+     *
+     * @param cbm Cell broadcast message
+     * @return True if the message should be displayed to the user
+     */
+    private boolean shouldDisplayMessage(CellBroadcastMessage cbm) {
+        // Check if the channel is enabled by the user or configuration.
+        if (!isChannelEnabled(cbm)) {
+            Log.d(TAG, "ignoring alert of type " + cbm.getServiceCategory()
+                    + " by user preference");
+            return false;
+        }
+
+        // Check if we need to perform language filtering.
+        CellBroadcastChannelRange range = CellBroadcastChannelManager
+                .getCellBroadcastChannelRangeFromMessage(getApplicationContext(), cbm);
+        if (range != null && range.mFilterLanguage) {
+            // If the message's language does not match device's message, we don't display the
+            // message.
+            String messageLanguage = cbm.getLanguageCode();
+            String deviceLanguage = Locale.getDefault().getLanguage();
+            if (!TextUtils.isEmpty(messageLanguage)
+                    && !messageLanguage.equalsIgnoreCase(deviceLanguage)) {
+                Log.d(TAG, "ignoring the alert due to language mismatch. Message lang="
+                        + messageLanguage + ", device lang=" + deviceLanguage);
+                return false;
+            }
+        }
+        return true;
+    }
+
     private void handleCellBroadcastIntent(Intent intent) {
         Bundle extras = intent.getExtras();
         if (extras == null) {
@@ -251,9 +284,7 @@ public class CellBroadcastAlertService extends Service {
             Log.e(TAG, "Invalid subscription id");
         }
 
-        if (!isMessageEnabled(cbm)) {
-            Log.d(TAG, "ignoring alert of type " + cbm.getServiceCategory() +
-                    " by user preference");
+        if (!shouldDisplayMessage(cbm)) {
             return;
         }
 
@@ -371,13 +402,12 @@ public class CellBroadcastAlertService extends Service {
     }
 
     /**
-     * Check if the message is enabled. The message could be enabled or disabled by users or
-     * roaming conditions.
+     * Check if the message's channel is enabled on the device.
      *
      * @param message the message to check
-     * @return true if the user has enabled this message type; false otherwise
+     * @return true if the channel is enabled on the device, otherwise false.
      */
-    private boolean isMessageEnabled(CellBroadcastMessage message) {
+    private boolean isChannelEnabled(CellBroadcastMessage message) {
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         // Check if all emergency alerts are disabled.
@@ -507,6 +537,13 @@ public class CellBroadcastAlertService extends Service {
                     .getBoolean(CellBroadcastSettings.KEY_ENABLE_PUBLIC_SAFETY_MESSAGES,
                             true);
         }
+        if (CellBroadcastChannelManager.checkCellBroadcastChannelRange(subId,
+                channel, R.array.state_local_test_alert_range_strings, this)) {
+            return emergencyAlertEnabled
+                    && PreferenceManager.getDefaultSharedPreferences(this)
+                    .getBoolean(CellBroadcastSettings.KEY_ENABLE_STATE_LOCAL_TEST_ALERTS,
+                            false);
+        }
         return true;
     }
 
@@ -553,11 +590,7 @@ public class CellBroadcastAlertService extends Service {
         } else {
             int channel = message.getServiceCategory();
             ArrayList<CellBroadcastChannelRange> ranges = CellBroadcastChannelManager
-                    .getInstance().getCellBroadcastChannelRanges(getApplicationContext(),
-                            R.array.additional_cbs_channels_strings);
-            ranges.addAll(CellBroadcastChannelManager
-                    .getInstance().getCellBroadcastChannelRanges(getApplicationContext(),
-                            R.array.public_safety_messages_channels_range_strings));
+                    .getAllCellBroadcastChannelRanges(getApplicationContext());
             if (ranges != null) {
                 for (CellBroadcastChannelRange range : ranges) {
                     if (channel >= range.mStartId && channel <= range.mEndId) {
