@@ -33,6 +33,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PersistableBundle;
+import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.SystemProperties;
@@ -103,6 +104,12 @@ public class CellBroadcastAlertService extends Service {
      * treated as a duplicate.
      */
     private static final long DEFAULT_EXPIRATION_TIME = DAY_IN_MILLIS;
+
+    /**
+     * Key for accessing message filter from SystemProperties. For testing use.
+     */
+    private static final String MESSAGE_FILTER_PROPERTY_KEY =
+            "persist.cellbroadcast.message_filter";
 
     /**
      * Alert type
@@ -259,6 +266,21 @@ public class CellBroadcastAlertService extends Service {
                 return false;
             }
         }
+
+        // Check for custom filtering
+        String messageFilters = SystemProperties.get(MESSAGE_FILTER_PROPERTY_KEY, "");
+        if (!TextUtils.isEmpty(messageFilters)) {
+            String[] filters = messageFilters.split(",");
+            for (String filter : filters) {
+                if (!TextUtils.isEmpty(filter)) {
+                    if (cbm.getMessageBody().toLowerCase().contains(filter)) {
+                        Log.i(TAG, "Skipped message due to filter: " + filter);
+                        return false;
+                    }
+                }
+            }
+        }
+
         return true;
     }
 
@@ -631,6 +653,11 @@ public class CellBroadcastAlertService extends Service {
             Intent alertDialogIntent = createDisplayMessageIntent(this,
                     CellBroadcastAlertDialog.class, messageList);
             alertDialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            // Wake up the device up regardless the scenario. (The device might be
+            // in screen saver mode that needs to be waken up otherwise the alert
+            // window can not be displayed.)
+            pm.wakeUp(SystemClock.uptimeMillis());
             startActivity(alertDialogIntent);
         }
 
