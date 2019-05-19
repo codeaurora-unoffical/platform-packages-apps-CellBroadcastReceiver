@@ -106,7 +106,7 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
             // rename registered notification channels on locale change
             CellBroadcastAlertService.createNotificationChannels(context);
         } else if (Intent.ACTION_SERVICE_STATE.equals(action)) {
-            if (context.getResources().getBoolean(
+            if (CellBroadcastSettings.getResourcesForDefaultSmsSubscriptionId(context).getBoolean(
                     R.bool.reset_duplicate_detection_on_airplane_mode)) {
                 Bundle extras = intent.getExtras();
                 ServiceState ss = ServiceState.newFromBundle(extras);
@@ -124,8 +124,9 @@ public class CellBroadcastReceiver extends BroadcastReceiver {
         String currentIntervalDefault = sp.getString(CURRENT_INTERVAL_DEFAULT, "0");
 
         // If interval default changes, reset the interval to the new default value.
-        String newIntervalDefault = context.getResources().getString(
-                R.string.alert_reminder_interval_default_value);
+        String newIntervalDefault =
+                CellBroadcastSettings.getResourcesForDefaultSmsSubscriptionId(context)
+                        .getString(R.string.alert_reminder_interval_default_value);
         if (!newIntervalDefault.equals(currentIntervalDefault)) {
             Log.d(TAG, "Default interval changed from " + currentIntervalDefault + " to " +
                     newIntervalDefault);
