@@ -59,6 +59,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.internal.annotations.VisibleForTesting;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
@@ -76,7 +78,8 @@ public class CellBroadcastAlertDialog extends Activity {
     private static final String TAG = "CellBroadcastAlertDialog";
 
     /** Intent extra for non-emergency alerts sent when user selects the notification. */
-    static final String FROM_NOTIFICATION_EXTRA = "from_notification";
+    @VisibleForTesting
+    public static final String FROM_NOTIFICATION_EXTRA = "from_notification";
 
     // Intent extra to identify if notification was sent while trying to move away from the dialog
     //  without acknowledging the dialog
@@ -349,6 +352,14 @@ public class CellBroadcastAlertDialog extends Activity {
         }
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        getWindow().addSystemFlags(
+                android.view.WindowManager.LayoutParams
+                        .SYSTEM_FLAG_HIDE_NON_SYSTEM_OVERLAY_WINDOWS);
+    }
+
     /**
      * Start animating warning icon.
      */
@@ -387,6 +398,8 @@ public class CellBroadcastAlertDialog extends Activity {
             CellBroadcastAlertService.addToNotificationBar(getLatestMessage(), mMessageList,
                     getApplicationContext(), true);
         }
+        // Stop playing alert sound/vibration/speech (if started)
+        stopService(new Intent(this, CellBroadcastAlertAudio.class));
     }
 
     @Override
@@ -596,7 +609,8 @@ public class CellBroadcastAlertDialog extends Activity {
      * @param intent The new intent containing one or more {@link SmsCbMessage}.
      */
     @Override
-    protected void onNewIntent(Intent intent) {
+    @VisibleForTesting
+    public void onNewIntent(Intent intent) {
         ArrayList<SmsCbMessage> newMessageList = intent.getParcelableArrayListExtra(
                 CellBroadcastAlertService.SMS_CB_MESSAGE_EXTRA);
         if (newMessageList != null) {
@@ -660,7 +674,8 @@ public class CellBroadcastAlertDialog extends Activity {
      * Stop animating warning icon and stop the {@link CellBroadcastAlertAudio}
      * service if necessary.
      */
-    void dismiss() {
+    @VisibleForTesting
+    public void dismiss() {
         Log.d(TAG, "dismiss");
         // Stop playing alert sound/vibration/speech (if started)
         stopService(new Intent(this, CellBroadcastAlertAudio.class));
