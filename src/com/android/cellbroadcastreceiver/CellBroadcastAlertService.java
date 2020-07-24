@@ -33,6 +33,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PersistableBundle;
+import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.UserHandle;
@@ -44,6 +45,7 @@ import android.telephony.SmsCbEtwsInfo;
 import android.telephony.SmsCbLocation;
 import android.telephony.SmsCbMessage;
 import android.telephony.SubscriptionManager;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.cellbroadcastreceiver.CellBroadcastChannelManager.CellBroadcastChannelRange;
@@ -222,6 +224,38 @@ public class CellBroadcastAlertService extends Service {
         return time;
     }
 
+    /**
+     * Check if we should display the received cell broadcast message.
+     *
+     * @param cbm Cell broadcast message
+     * @return True if the message should be displayed to the user
+     */
+    private boolean shouldDisplayMessage(CellBroadcastMessage cbm) {
+        // Check if the channel is enabled by the user or configuration.
+        if (!isChannelEnabled(cbm)) {
+            Log.d(TAG, "ignoring alert of type " + cbm.getServiceCategory()
+                    + " by user preference");
+            return false;
+        }
+
+        // Check if we need to perform language filtering.
+        CellBroadcastChannelRange range = CellBroadcastChannelManager
+                .getCellBroadcastChannelRangeFromMessage(getApplicationContext(), cbm);
+        if (range != null && range.mFilterLanguage) {
+            // If the message's language does not match device's message, we don't display the
+            // message.
+            String messageLanguage = cbm.getLanguageCode();
+            String deviceLanguage = Locale.getDefault().getLanguage();
+            if (!TextUtils.isEmpty(messageLanguage)
+                    && !messageLanguage.equalsIgnoreCase(deviceLanguage)) {
+                Log.d(TAG, "ignoring the alert due to language mismatch. Message lang="
+                        + messageLanguage + ", device lang=" + deviceLanguage);
+                return false;
+            }
+        }
+        return true;
+    }
+
     private void handleCellBroadcastIntent(Intent intent) {
         Bundle extras = intent.getExtras();
         if (extras == null) {
@@ -244,9 +278,7 @@ public class CellBroadcastAlertService extends Service {
             Log.e(TAG, "Invalid subscription id");
         }
 
-        if (!isMessageEnabled(cbm)) {
-            Log.d(TAG, "ignoring alert of type " + cbm.getServiceCategory() +
-                    " by user preference");
+        if (!shouldDisplayMessage(cbm)) {
             return;
         }
 
@@ -351,13 +383,12 @@ public class CellBroadcastAlertService extends Service {
     }
 
     /**
-     * Check if the message is enabled. The message could be enabled or disabled by users or
-     * roaming conditions.
+     * Check if the message's channel is enabled on the device.
      *
      * @param message the message to check
-     * @return true if the user has enabled this message type; false otherwise
+     * @return true if the channel is enabled on the device, otherwise false.
      */
-    private boolean isMessageEnabled(CellBroadcastMessage message) {
+    private boolean isChannelEnabled(CellBroadcastMessage message) {
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         // Check if all emergency alerts are disabled.
@@ -482,6 +513,13 @@ public class CellBroadcastAlertService extends Service {
                     .getBoolean(CellBroadcastSettings.KEY_ENABLE_PUBLIC_SAFETY_MESSAGES,
                             true);
         }
+        if (CellBroadcastChannelManager.checkCellBroadcastChannelRange(subId,
+                channel, R.array.state_local_test_alert_range_strings, this)) {
+            return emergencyAlertEnabled
+                    && PreferenceManager.getDefaultSharedPreferences(this)
+                    .getBoolean(CellBroadcastSettings.KEY_ENABLE_STATE_LOCAL_TEST_ALERTS,
+                            false);
+        }
         return true;
     }
 
@@ -528,11 +566,7 @@ public class CellBroadcastAlertService extends Service {
         } else {
             int channel = message.getServiceCategory();
             ArrayList<CellBroadcastChannelRange> ranges = CellBroadcastChannelManager
-                    .getInstance().getCellBroadcastChannelRanges(getApplicationContext(),
-                            R.array.additional_cbs_channels_strings);
-            ranges.addAll(CellBroadcastChannelManager
-                    .getInstance().getCellBroadcastChannelRanges(getApplicationContext(),
-                            R.array.public_safety_messages_channels_range_strings));
+                    .getAllCellBroadcastChannelRanges(getApplicationContext());
             if (ranges != null) {
                 for (CellBroadcastChannelRange range : ranges) {
                     if (channel >= range.mStartId && channel <= range.mEndId) {
@@ -545,8 +579,6 @@ public class CellBroadcastAlertService extends Service {
         CellBroadcastChannelRange range = CellBroadcastChannelManager
                 .getCellBroadcastChannelRangeFromMessage(getApplicationContext(), message);
         audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_TONE_TYPE, alertType);
-        audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_VIBRATE_EXTRA,
-                prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_VIBRATE, true));
         audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_VIBRATION_PATTERN_EXTRA,
                 (range != null) ? range.mVibrationPattern
                         : getApplicationContext().getResources().getIntArray(
@@ -557,34 +589,11 @@ public class CellBroadcastAlertService extends Service {
         if (prefs.getBoolean(CellBroadcastSettings.KEY_ENABLE_ALERT_SPEECH, true)) {
             audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_MESSAGE_BODY, messageBody);
 
-            String preferredLanguage = message.getLanguageCode();
-            String defaultLanguage = null;
-            if (message.isEtwsMessage()) {
-                // Only do TTS for ETWS secondary message.
-                // There is no text in ETWS primary message. When we construct the ETWS primary
-                // message, we hardcode "ETWS" as the body hence we don't want to speak that out
-                // here.
+            String language = message.getLanguageCode();
 
-                // Also in many cases we see the secondary message comes few milliseconds after
-                // the primary one. If we play TTS for the primary one, It will be overwritten by
-                // the secondary one immediately anyway.
-                if (!message.getEtwsWarningInfo().isPrimary()) {
-                    // Since only Japanese carriers are using ETWS, if there is no language
-                    // specified in the ETWS message, we'll use Japanese as the default language.
-                    defaultLanguage = "ja";
-                }
-            } else {
-                // If there is no language specified in the CMAS message, use device's
-                // default language.
-                defaultLanguage = Locale.getDefault().getLanguage();
-            }
-
-            Log.d(TAG, "Preferred language = " + preferredLanguage +
-                    ", Default language = " + defaultLanguage);
-            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_MESSAGE_PREFERRED_LANGUAGE,
-                    preferredLanguage);
-            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_MESSAGE_DEFAULT_LANGUAGE,
-                    defaultLanguage);
+            Log.d(TAG, "Message language = " + language);
+            audioIntent.putExtra(CellBroadcastAlertAudio.ALERT_AUDIO_MESSAGE_LANGUAGE,
+                    language);
         }
         startService(audioIntent);
 
@@ -598,6 +607,11 @@ public class CellBroadcastAlertService extends Service {
             Intent alertDialogIntent = createDisplayMessageIntent(this,
                     CellBroadcastAlertDialog.class, messageList);
             alertDialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            // Wake up the device up regardless the scenario. (The device might be
+            // in screen saver mode that needs to be waken up otherwise the alert
+            // window can not be displayed.)
+            pm.wakeUp(SystemClock.uptimeMillis());
             startActivity(alertDialogIntent);
         }
 
