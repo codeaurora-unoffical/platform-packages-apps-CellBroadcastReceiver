@@ -650,9 +650,11 @@ public class CellBroadcastAlertService extends Service {
         final NotificationManager notificationManager = NotificationManager.from(context);
         createNotificationChannels(context);
 
+        boolean isWatch = context.getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_WATCH);
         // Create intent to show the new messages when user selects the notification.
         Intent intent;
-        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (isWatch) {
             // For FEATURE_WATCH we want to mark as read
             intent = createMarkAsReadIntent(context, message.getDeliveryTime());
         } else {
@@ -665,7 +667,7 @@ public class CellBroadcastAlertService extends Service {
         intent.putExtra(CellBroadcastAlertDialog.FROM_SAVE_STATE_NOTIFICATION_EXTRA, fromSaveState);
 
         PendingIntent pi;
-        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (isWatch) {
             pi = PendingIntent.getBroadcast(context, 0, intent, 0);
         } else {
             pi = PendingIntent.getActivity(context, NOTIFICATION_ID, intent,
@@ -684,7 +686,7 @@ public class CellBroadcastAlertService extends Service {
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setOngoing(message.isEmergencyAlertMessage());
 
-        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (isWatch) {
             builder.setDeleteIntent(pi);
             // FEATURE_WATCH/CWH devices see this as priority
             builder.setVibrate(new long[]{0});
@@ -763,7 +765,7 @@ public class CellBroadcastAlertService extends Service {
      * @return delete intent to add to the pending intent
      */
     static Intent createMarkAsReadIntent(Context context, long deliveryTime) {
-        Intent deleteIntent = new Intent(context, CellBroadcastReceiver.class);
+        Intent deleteIntent = new Intent(context, CellBroadcastInternalReceiver.class);
         deleteIntent.setAction(CellBroadcastReceiver.ACTION_MARK_AS_READ);
         deleteIntent.putExtra(CellBroadcastReceiver.EXTRA_DELIVERY_TIME, deliveryTime);
         return deleteIntent;
